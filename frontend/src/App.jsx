@@ -4,7 +4,7 @@ import TecnicoView from './components/TecnicoView';
 import AdminDashboard from './components/AdminDashboard';
 
 function AppContent() {
-  const { session, perfil, loading } = useAuth();
+  const { session, perfil, loading, error, logout } = useAuth();
 
   if (loading) {
     return (
@@ -17,7 +17,9 @@ function AppContent() {
     );
   }
 
-  if (!session || !perfil) return <Login />;
+  if (!session || !perfil) {
+    return <Login errorInicial={error} />;
+  }
 
   if (perfil.rol === 'admin') return <AdminDashboard />;
 

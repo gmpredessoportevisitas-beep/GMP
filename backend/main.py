@@ -16,9 +16,7 @@ import re
 import base64
 from datetime import datetime, timezone, timedelta
 from typing import Optional
-from functools import wraps
 
-import jwt as pyjwt
 from fastapi import FastAPI, HTTPException, Query, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -26,18 +24,19 @@ from pydantic import BaseModel, Field
 from supabase import create_client, Client
 from xhtml2pdf import pisa
 from PIL import Image, ImageDraw
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ===========================================================================
 # CONFIGURACION
 # ===========================================================================
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
 
 for var, name in [
     (SUPABASE_URL, "SUPABASE_URL"),
     (SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY"),
-    (SUPABASE_JWT_SECRET, "SUPABASE_JWT_SECRET"),
 ]:
     if not var:
         raise RuntimeError(f"Variable de entorno {name} es obligatoria.")
@@ -63,21 +62,26 @@ app.add_middleware(
 # ===========================================================================
 
 async def get_usuario_actual(authorization: str = Header(...)) -> dict:
-    """Verifica el JWT de Supabase y retorna el perfil del usuario."""
+    """
+    Verifica el token JWT usando la API de Supabase (no requiere JWT_SECRET manual).
+    Luego consulta la tabla perfiles para obtener el rol del usuario.
+    """
     token = authorization.replace("Bearer ", "")
     try:
-        payload = pyjwt.decode(
-            token,
-            SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-    except pyjwt.ExpiredSignatureError:
-        raise HTTPException(401, "Token expirado. Inicia sesion nuevamente.")
-    except pyjwt.InvalidTokenError:
-        raise HTTPException(401, "Token invalido.")
+        # Validar el token contra Supabase Auth (el propio Supabase verifica firma y expiracion)
+        user_resp = supabase.auth.get_user(token)
+        if not user_resp.user:
+            raise HTTPException(401, "Token invalido o expirado.")
+    except Exception as e:
+        msg = str(e)
+        if "expired" in msg.lower() or "JWT" in msg:
+            raise HTTPException(401, "Token expirado. Inicia sesion nuevamente.")
+        raise HTTPException(401, f"Token invalido: {msg}")
 
-    user_id = payload.get("sub", "")
+    user_id = user_resp.user.id
+    email = user_resp.user.email or ""
+
+    # Obtener perfil desde la tabla perfiles
     result = supabase.table("perfiles").select("*").eq("id", user_id).execute()
     if not result.data:
         raise HTTPException(403, "Perfil no encontrado. Contacta al administrador.")

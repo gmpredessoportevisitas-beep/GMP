@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-export default function Login() {
+export default function Login({ errorInicial = '' }) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState(errorInicial);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
