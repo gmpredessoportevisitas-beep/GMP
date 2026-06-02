@@ -22,10 +22,6 @@ export default function TecnicoView() {
   const [guardado, setGuardado] = useState(null);
   const [msg, setMsg] = useState({ tipo: '', texto: '' });
 
-  /* Preview */
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
   const [tocado, setTocado] = useState(false);
@@ -122,40 +118,6 @@ export default function TecnicoView() {
     if (c) c.getContext('2d').clearRect(0, 0, CW, CH);
     trazosRef.current = []; trazoRef.current = [];
     setFirmaSvg(''); setTocado(false);
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Preview PDF                                                          */
-  /* ------------------------------------------------------------------ */
-  async function previsualizar() {
-    if (!empresaId || !sedeId) { setMsg({ tipo: 'error', texto: 'Selecciona empresa y sede.' }); return; }
-    setPreviewLoading(true);
-    setMsg({ tipo: '', texto: '' });
-    try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/preview-pdf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-        body: JSON.stringify({
-          empresa_id: parseInt(empresaId),
-          sede_id: parseInt(sedeId),
-          observaciones,
-          firma_vector: firmaSvg,
-        }),
-      });
-      if (!res.ok) throw new Error('Error al generar previsualización');
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      setPreviewUrl(url);
-      setPreviewLoading(false);
-    } catch (err) {
-      setMsg({ tipo: 'error', texto: err.message });
-      setPreviewLoading(false);
-    }
-  }
-
-  function cerrarPreview() {
-    if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
   }
 
   /* ------------------------------------------------------------------ */
@@ -368,26 +330,9 @@ export default function TecnicoView() {
                 </div>
 
                 {/* Botones */}
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <button type="button" onClick={previsualizar} disabled={previewLoading || !empresaId || !sedeId}
-                    className={`py-4 px-4 rounded-xl font-semibold transition-all active:scale-[0.97] flex items-center justify-center gap-2 border-2 ${
-                      previewLoading || !empresaId || !sedeId
-                        ? 'border-gray-200 text-gray-400 bg-white cursor-not-allowed'
-                        : 'border-primary-600 text-primary-600 bg-white hover:bg-orange-50 shadow-sm'
-                    }`}>
-                    {previewLoading ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent" />
-                    ) : (
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    )}
-                    Vista Previa
-                  </button>
-
+                <div className="w-full flex justify-center ">
                   <button type="submit" disabled={loading || !empresaId || !sedeId}
-                    className={`py-4 px-4 rounded-xl font-semibold text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-md ${
+                    className={`py-4 px-4 rounded-xl  font-semibold text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-md ${
                       loading || !empresaId || !sedeId
                         ? 'bg-gray-300 cursor-not-allowed'
                         : 'bg-primary-600 hover:bg-primary-700 hover:shadow-lg'
@@ -407,60 +352,6 @@ export default function TecnicoView() {
           </form>
         )}
       </main>
-
-      {/* ============================================================ */}
-      {/* MODAL DE PREVISUALIZACION PDF                                  */}
-      {/* ============================================================ */}
-      {previewUrl && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in" onClick={cerrarPreview}>
-          <div className="bg-white rounded-2xl w-full max-w-4xl h-[94vh] md:h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            {/* Cabecera del modal */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-800">Vista Previa del Reporte</h2>
-                  <p className="text-xs text-gray-400">{empresaNombre} - {sedeNombre}</p>
-                </div>
-              </div>
-              <button onClick={cerrarPreview} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="Cerrar">
-                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Visor PDF */}
-            <div className="flex-1 bg-gray-200 min-h-0">
-              <iframe src={previewUrl} className="w-full h-full" title="Previsualizacion del PDF" />
-            </div>
-
-            {/* Pie del modal */}
-            <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-200 bg-white">
-              <button onClick={cerrarPreview} className="py-2.5 px-5 bg-white text-gray-700 border border-gray-300 rounded-xl font-medium hover:bg-gray-50 transition-all active:scale-[0.97] text-sm">
-                Volver a Editar
-              </button>
-              <button onClick={guardarReporte} disabled={loading}
-                className={`py-2.5 px-6 rounded-xl font-semibold text-white transition-all active:scale-[0.97] flex items-center gap-2 shadow-sm text-sm ${
-                  loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary-600 hover:bg-primary-700'
-                }`}>
-                {loading ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                  </svg>
-                )}
-                {loading ? 'Guardando...' : 'Confirmar y Guardar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

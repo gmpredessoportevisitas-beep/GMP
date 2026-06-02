@@ -11,7 +11,10 @@ export default function AdminReportes() {
   const [error, setError] = useState('');
   const [pagina, setPagina] = useState(0);
   const [descargando, setDescargando] = useState(null);
-
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState(null);
+  const [msg, setMsg] = useState({ tipo: '', texto: '' });
+  
   const cargar = useCallback(async (offset = 0) => {
     setLoading(true); setError('');
     try {
@@ -54,6 +57,30 @@ export default function AdminReportes() {
     }
   }
 
+    async function previsualizar(id) {
+  setPreviewLoadingId(id);
+  setMsg({ tipo: '', texto: '' });
+  try {
+    const t = await getToken();
+    const res = await fetch(`${API}/api/reportes/${id}/preview-pdf`, {
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    if (!res.ok) throw new Error('Error al generar previsualización');
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    setPreviewUrl(url);
+  } catch (err) {
+    setMsg({ tipo: 'error', texto: err.message });
+  } finally {
+    setPreviewLoadingId(null);
+  }
+}
+
+  function cerrarPreview() {
+    if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
+  }
+
+
   function exportarCSV() {
     if (!reportes.length) return;
     const h = ['ID', 'Fecha', 'Empresa', 'Sede', 'Tecnico', 'Observaciones'];
@@ -78,6 +105,7 @@ export default function AdminReportes() {
   }
 
   function csv(t) { return `"${String(t||'').replace(/"/g,'""')}"`; }
+  
 
   return (
     <div className="animate-fade-in max-w-6xl mx-auto">
@@ -143,9 +171,50 @@ export default function AdminReportes() {
                       <td className="px-5 py-4 text-sm text-gray-500">{r.sedes?.nombre || '—'}</td>
                       <td className="px-5 py-4 text-sm text-gray-500">{r.perfiles?.nombre_completo || '—'}</td>
                       <td className="px-5 py-4 text-sm text-gray-400 max-w-[140px] truncate">{r.observaciones || '—'}</td>
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-5 py-4 text-center flex items-center justify-center gap-2">
+                        <button onClick={() => previsualizar(r.id)} 
+                          className={`py-2.5 px-2 rounded-xl gap-2 shadow-sm transition-all hover:bg-orange-50`}>
+                          {previewLoadingId === r.id ? (
+                            <div className="animate-spin rounded-full h-5 w-5 border-2  border-t-transparent" />
+                          ) : (
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </button>
+                        {previewUrl && (
+                          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in" onClick={cerrarPreview}>
+                            <div className="bg-white rounded-2xl w-full max-w-4xl h-[94vh] md:h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                              {/* Cabecera del modal */}
+                              <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                    <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                  </div>
+                                  <div>
+                                    <h2 className="text-lg font-bold text-gray-800">Vista Previa del Reporte</h2>
+                                    <p className="text-xs text-gray-400">{r?.empresas?.nombre || '—'} - {r?.sedes?.nombre || '—'}</p>
+                                  </div>
+                                </div>
+                                <button onClick={cerrarPreview} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="Cerrar">
+                                  <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                  </svg>
+                                </button>
+                              </div>
+
+                              {/* Visor PDF */}
+                              <div className="flex-1 bg-gray-200 min-h-0">
+                                <iframe src={previewUrl} className="w-full h-full" title="Previsualizacion del PDF" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <button onClick={() => descargarPDF(r.id)} disabled={descargando === r.id}
-                          className={`inline-flex items-center gap-1.5 py-2 px-4 rounded-xl text-xs font-bold transition-all ${
+                          className={`inline-flex items-center gap-1.5 py-3 px-2 rounded-xl text-xs font-bold transition-all ${
                             descargando === r.id
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                               : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
