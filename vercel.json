@@ -19,30 +19,41 @@
       "dest": "backend/main.py",
       "headers": {
         "Access-Control-Allow-Credentials": "true",
-        "Access-Control-Allow-Origin": "http://localhost:5173",
+        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,OPTIONS,PATCH,DELETE,POST,PUT",
         "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
       }
     },
     {
       "src": "/assets/(.*)",
-      "dest": "frontend/assets/$1"
+      "dest": "frontend/dist/assets/$1"
+    },
+    {
+      "src": "/favicon.svg",
+      "dest": "frontend/dist/favicon.svg"
+    },
+    {
+      "src": "/logo.webp",
+      "dest": "frontend/dist/logo.webp"
     },
     {
       "src": "/manifest.webmanifest",
-      "dest": "frontend/manifest.webmanifest"
-    },
-    {
-      "src": "/pwa-(.*).png",
-      "dest": "frontend/pwa-$1.png"
+      "dest": "frontend/dist/manifest.webmanifest"
     },
     {
       "src": "/sw.js",
-      "dest": "frontend/sw.js"
+      "dest": "frontend/dist/sw.js",
+      "headers": {
+        "Cache-Control": "no-cache, no-store, must-revalidate"
+      }
+    },
+    {
+      "src": "/workbox-(.*).js",
+      "dest": "frontend/dist/workbox-$1.js"
     },
     {
       "src": "/((?!api/).*)",
-      "dest": "frontend/index.html"
+      "dest": "frontend/dist/index.html"
     }
   ]
 }
