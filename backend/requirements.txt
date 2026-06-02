@@ -2,7 +2,7 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.0
 pydantic==2.9.0
 supabase==2.7.0
-xhtml2pdf==0.2.16
+fpdf2==2.7.9
 python-multipart==0.0.12
 Pillow==11.0.0
 python-dotenv==1.0.1

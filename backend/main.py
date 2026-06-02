@@ -1,19 +1,19 @@
 """
 GMP v2 Backend - API de Reportes con Control de Roles
 ======================================================
-FastAPI + Supabase + JWT Auth + xhtml2pdf
+FastAPI + Supabase + JWT Auth + fpdf2
 Despliegue: Render (Plan Free)
 
 Variables de entorno:
   SUPABASE_URL                -> URL del proyecto Supabase
   SUPABASE_SERVICE_ROLE_KEY   -> Service Role Key
-  SUPABASE_JWT_SECRET         -> JWT Secret (Settings > API > JWT Secret)
 """
 
 import os
 import io
 import re
 import base64
+import tempfile
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -22,7 +22,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from supabase import create_client, Client
-from xhtml2pdf import pisa
+from fpdf import FPDF
 from PIL import Image, ImageDraw
 from dotenv import load_dotenv
 
@@ -132,44 +132,6 @@ class ReporteCreate(BaseModel):
 
 
 # ===========================================================================
-# PLANTILLA HTML PARA PDF
-# ===========================================================================
-PDF_TEMPLATE = """<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><style>
-@page{size:A4;margin:2cm 1.5cm 2.5cm 1.5cm;
-  @frame header{-pdf-frame-content:hd;left:1.5cm;right:1.5cm;top:1cm;height:2.5cm;}
-  @frame footer{-pdf-frame-content:ft;left:1.5cm;right:1.5cm;bottom:1cm;height:1.5cm;}}
-body{font-family:Helvetica,Arial,sans-serif;font-size:12px;color:#333;line-height:1.6;}
-.header{text-align:center;border-bottom:3px solid #1a5276;padding-bottom:15px;margin-bottom:25px;}
-.header h1{color:#1a5276;font-size:22px;margin:0 0 5px 0;}
-.header p{color:#666;font-size:11px;margin:0;}
-.info-grid{width:100%;border-collapse:collapse;margin-bottom:25px;}
-.info-grid td{padding:8px 12px;border:1px solid #d5dbdb;vertical-align:top;}
-.info-grid .label{background-color:#eaf2f8;font-weight:bold;color:#1a5276;width:25%;font-size:11px;}
-.info-grid .value{font-size:12px;background:#fff;}
-.section-title{color:#1a5276;font-size:14px;font-weight:bold;border-bottom:2px solid #aed6f1;padding-bottom:5px;margin:25px 0 10px 0;}
-.obs-box{border:1px solid #d5dbdb;border-radius:4px;padding:15px;background:#f9fbfd;min-height:80px;font-size:12px;white-space:pre-wrap;}
-.firma-section{margin-top:40px;}
-.firma-box{text-align:center;border:1px solid #d5dbdb;border-radius:4px;padding:15px 10px 10px 10px;min-height:130px;}
-.firma-box img{max-width:300px;max-height:120px;}
-.firma-line{border-top:1px solid #333;width:250px;margin:10px auto 0 auto;padding-top:5px;font-size:10px;color:#666;}
-.sin-firma{color:#999;font-style:italic;font-size:12px;padding:40px 0;}
-.footer{text-align:center;font-size:9px;color:#999;}.footer span{margin:0 15px;}
-</style></head><body>
-<div id="hd" class="header"><h1>REPORTE DE MANTENIMIENTO</h1><p>Sistema GMP &middot; Gestion de Mantenimiento Preventivo</p></div>
-<div class="section-title">Informacion General</div>
-<table class="info-grid">
-<tr><td class="label">ID Reporte</td><td class="value">{{id}}</td><td class="label">Fecha y Hora</td><td class="value">{{fecha_hora}}</td></tr>
-<tr><td class="label">Empresa</td><td class="value">{{empresa}}</td><td class="label">Sede / Punto</td><td class="value">{{sede}}</td></tr>
-<tr><td class="label">Tecnico</td><td class="value">{{tecnico}}</td><td class="label">Email Tecnico</td><td class="value">{{email_tecnico}}</td></tr>
-</table>
-<div class="section-title">Observaciones / Hallazgos</div>
-<div class="obs-box">{{observaciones}}</div>
-<div class="section-title firma-section">Firma del Cliente</div>
-<div class="firma-box">{{firma_img}}<div class="firma-line">Firma de conformidad del cliente</div></div>
-<div id="ft" class="footer"><span>Documento generado el {{fecha_generacion}}</span><span>GMP &copy; {{anio}}</span><span>Pagina <pdf:pagenumber> de <pdf:pagecount></span></div>
-</body></html>"""
-
-# ===========================================================================
 # FUNCIONES AUXILIARES
 # ===========================================================================
 
@@ -212,6 +174,27 @@ def svg_paths_a_png(svg_string: str, width: int = 400, height: int = 150) -> str
     return f"data:image/png;base64,{b64}"
 
 
+def svg_paths_a_png_bytes(svg_string: str, width: int = 400, height: int = 150) -> Optional[io.BytesIO]:
+    """Convierte paths SVG a BytesIO PNG (para usar directamente con fpdf2)."""
+    if not svg_string or not svg_string.strip():
+        return None
+    paths = re.findall(r'<path\s[^>]*\bd="([^"]*)"', svg_string)
+    if not paths:
+        paths = re.findall(r"<path\s[^>]*\bd='([^']*)'", svg_string)
+    if not paths:
+        return None
+
+    img = Image.new("RGB", (width, height), "white")
+    draw = ImageDraw.Draw(img)
+    for d in paths:
+        _dibujar_path(draw, d)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
 def _dibujar_path(draw: ImageDraw.ImageDraw, d: str) -> None:
     """Renderiza comandos M, L, Q de SVG sobre un ImageDraw."""
     tokens = re.findall(r"[MLQmlq]|[-+]?\d*\.?\d+(?:[eE][-+]?\d+)?", d)
@@ -240,30 +223,145 @@ def _dibujar_path(draw: ImageDraw.ImageDraw, d: str) -> None:
             i += 2  # skip unknown
 
 
-def generar_html_pdf(reporte: dict, empresa_nombre: str, sede_nombre: str,
-                     tecnico_nombre: str, tecnico_email: str) -> str:
-    ahora = datetime.now(timezone.utc)
-    firma_raw = reporte.get("firma_vector", "").strip()
-    firma_html = (f'<img src="{svg_paths_a_png(firma_raw)}" alt="Firma" />'
-                  if firma_raw else '<p class="sin-firma">Sin firma registrada</p>')
-    obs = reporte.get("observaciones", "").strip() or "Sin observaciones registradas."
+class ReportePDF(FPDF):
+    """PDF corporativo del reporte de mantenimiento. Zero-storage: se genera en RAM."""
 
-    r = {
-        "{{id}}":               str(reporte.get("id","\u2014")),
-        "{{fecha_hora}}":       format_fecha(reporte.get("fecha_hora","")),
-        "{{empresa}}":          empresa_nombre,
-        "{{sede}}":             sede_nombre,
-        "{{tecnico}}":          tecnico_nombre,
-        "{{email_tecnico}}":    tecnico_email,
-        "{{observaciones}}":    obs,
-        "{{firma_img}}":        firma_html,
-        "{{fecha_generacion}}": format_fecha(ahora.isoformat()),
-        "{{anio}}":             str(ahora.year),
-    }
-    html = PDF_TEMPLATE
-    for k, v in r.items():
-        html = html.replace(k, v)
-    return html
+    def __init__(self, reporte: dict, empresa: str, sede: str, tecnico: str, email_tec: str):
+        super().__init__(orientation="P", unit="mm", format="A4")
+        self.reporte = reporte
+        self.empresa = empresa
+        self.sede = sede
+        self.tecnico = tecnico
+        self.email_tec = email_tec
+        self.COLOR_PRIMARIO = (26, 82, 118)   # #1a5276
+        self.COLOR_FONDO = (234, 242, 248)    # #eaf2f8
+        self.COLOR_BORDE = (213, 219, 219)    # #d5dbdb
+        self.set_auto_page_break(auto=True, margin=20)
+
+    def header(self):
+        """Encabezado en cada pagina."""
+        self.set_font("Helvetica", "B", 18)
+        self.set_text_color(*self.COLOR_PRIMARIO)
+        self.cell(0, 10, "REPORTE DE MANTENIMIENTO", align="C", new_x="LMARGIN", new_y="NEXT")
+        self.set_font("Helvetica", "", 9)
+        self.set_text_color(100, 100, 100)
+        self.cell(0, 6, "Sistema GMP - Gestion de Mantenimiento Preventivo", align="C", new_x="LMARGIN", new_y="NEXT")
+        # Linea separadora
+        self.set_draw_color(*self.COLOR_PRIMARIO)
+        self.set_line_width(0.5)
+        self.line(self.l_margin, self.get_y() + 1, self.w - self.r_margin, self.get_y() + 1)
+        self.ln(8)
+
+    def footer(self):
+        """Pie de pagina."""
+        self.set_y(-15)
+        self.set_font("Helvetica", "", 7)
+        self.set_text_color(150, 150, 150)
+        ahora = datetime.now(timezone.utc)
+        fecha_gen = format_fecha(ahora.isoformat())
+        self.cell(0, 10, f"Documento generado el {fecha_gen}    |    GMP © {ahora.year}    |    Pagina {self.page_no()}/{{nb}}", align="C")
+
+    def seccion_titulo(self, titulo: str):
+        """Titulo de seccion con subrayado."""
+        self.set_font("Helvetica", "B", 11)
+        self.set_text_color(*self.COLOR_PRIMARIO)
+        self.cell(0, 8, titulo, new_x="LMARGIN", new_y="NEXT")
+        self.set_draw_color(174, 214, 241)
+        self.set_line_width(0.4)
+        y = self.get_y()
+        self.line(self.l_margin, y, self.w - self.r_margin, y)
+        self.ln(5)
+
+    def tabla_info(self):
+        """Tabla de informacion general con celdas coloreadas."""
+        self.seccion_titulo("Informacion General")
+        cols = (45, 85, 45, 85)  # anchos de columnas
+        datos = [
+            ("ID Reporte", str(self.reporte.get("id", "—")), "Fecha y Hora", format_fecha(self.reporte.get("fecha_hora", ""))),
+            ("Empresa", self.empresa, "Sede / Punto", self.sede),
+            ("Tecnico", self.tecnico, "Email Tecnico", self.email_tec),
+        ]
+        for fila in datos:
+            self._fila_tabla(fila, cols)
+        self.ln(5)
+
+    def _fila_tabla(self, celdas: tuple, anchos: tuple):
+        """Dibuja una fila de la tabla con label (fondo azul) + value."""
+        h = 8
+        for i, (label, value) in enumerate([(celdas[0], celdas[1]), (celdas[2], celdas[3])]):
+            # Label
+            self.set_fill_color(*self.COLOR_FONDO)
+            self.set_text_color(*self.COLOR_PRIMARIO)
+            self.set_font("Helvetica", "B", 8)
+            self.cell(anchos[i * 2], h, f"  {label}", border=1, fill=True)
+            # Value
+            self.set_fill_color(255, 255, 255)
+            self.set_text_color(50, 50, 50)
+            self.set_font("Helvetica", "", 9)
+            self.cell(anchos[i * 2 + 1], h, f"  {value}", border=1, fill=True, new_x="RIGHT", new_y="LAST")
+        self.ln()
+
+    def seccion_observaciones(self):
+        """Observaciones con recuadro."""
+        self.seccion_titulo("Observaciones / Hallazgos")
+        obs = self.reporte.get("observaciones", "").strip() or "Sin observaciones registradas."
+        self.set_font("Helvetica", "", 10)
+        self.set_text_color(50, 50, 50)
+        self.set_fill_color(249, 251, 253)
+        x0 = self.get_x()
+        y0 = self.get_y()
+        # Recuadro
+        self.set_draw_color(*self.COLOR_BORDE)
+        self.set_line_width(0.3)
+        ancho = self.w - self.l_margin - self.r_margin
+        self.multi_cell(ancho, 6, obs, border=1, fill=True, align="L")
+        self.ln(8)
+
+    def seccion_firma(self):
+        """Firma del cliente como imagen PNG generada desde el SVG vectorial."""
+        self.seccion_titulo("Firma del Cliente")
+        firma_raw = self.reporte.get("firma_vector", "").strip()
+        if firma_raw:
+            png_buf = svg_paths_a_png_bytes(firma_raw)
+            if png_buf:
+                # Guardar en archivo temporal para que fpdf2 lo lea
+                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+                    tmp.write(png_buf.read())
+                    tmp_path = tmp.name
+                try:
+                    img_w = 80  # mm de ancho
+                    x = (self.w - img_w) / 2
+                    self.image(tmp_path, x=x, w=img_w)
+                finally:
+                    os.unlink(tmp_path)
+        else:
+            self.set_font("Helvetica", "I", 10)
+            self.set_text_color(150, 150, 150)
+            self.cell(0, 30, "Sin firma registrada", align="C", new_x="LMARGIN", new_y="NEXT")
+        # Linea de firma
+        self.set_draw_color(50, 50, 50)
+        self.set_line_width(0.4)
+        x_line = (self.w - 60) / 2
+        y_line = self.get_y() + 15
+        self.line(x_line, y_line, x_line + 60, y_line)
+        self.set_font("Helvetica", "", 8)
+        self.set_text_color(100, 100, 100)
+        self.set_y(y_line + 2)
+        self.cell(0, 6, "Firma de conformidad del cliente", align="C")
+
+
+def generar_pdf_fpdf(reporte: dict, empresa: str, sede: str, tecnico: str, email_tec: str) -> io.BytesIO:
+    """Genera el PDF del reporte en RAM usando fpdf2. Zero-storage."""
+    pdf = ReportePDF(reporte, empresa, sede, tecnico, email_tec)
+    pdf.alias_nb_pages()
+    pdf.add_page()
+    pdf.tabla_info()
+    pdf.seccion_observaciones()
+    pdf.seccion_firma()
+    buf = io.BytesIO()
+    pdf.output(buf)
+    buf.seek(0)
+    return buf
 
 
 # ===========================================================================
@@ -464,13 +562,8 @@ async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actua
     tecnico_nombre = perfil.get("nombre_completo", "\u2014")
     tecnico_email = perfil.get("email", "\u2014")
 
-    html = generar_html_pdf(r, empresa_nombre, sede_nombre, tecnico_nombre, tecnico_email)
-
-    buf = io.BytesIO()
-    pdf_status = pisa.CreatePDF(src=io.StringIO(html), dest=buf, encoding="UTF-8")
-    if pdf_status.err:
-        raise HTTPException(500, "Error al generar PDF")
-    buf.seek(0)
+    # Generar PDF programaticamente con fpdf2 (Zero-Storage: todo en RAM)
+    buf = generar_pdf_fpdf(r, empresa_nombre, sede_nombre, tecnico_nombre, tecnico_email)
 
     filename = f"reporte_{reporte_id}.pdf"
     return StreamingResponse(buf, media_type="application/pdf",
