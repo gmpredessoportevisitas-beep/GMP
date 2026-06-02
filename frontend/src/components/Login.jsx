@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import logoWebp from '../assets/logo.webp';
 
 export default function Login({ errorInicial = '' }) {
   const { login } = useAuth();
@@ -26,7 +27,7 @@ export default function Login({ errorInicial = '' }) {
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full animate-fade-in border border-white/10">
         <div className="mb-6 text-center">
           <div className="w-full h-full py-4 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-black">
-            <img src="/src/assets/logo.webp" alt="Logo" className="w-30 h-24" />
+            <img src={logoWebp} alt="Logo" className="w-30 h-24" />
           </div>  
           <p className="text-gray-500 text-sm mt-1">Gestion de Mantenimiento</p>
         </div>

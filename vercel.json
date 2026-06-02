@@ -29,6 +29,18 @@
       "dest": "frontend/assets/$1"
     },
     {
+      "src": "/manifest.webmanifest",
+      "dest": "frontend/manifest.webmanifest"
+    },
+    {
+      "src": "/pwa-(.*).png",
+      "dest": "frontend/pwa-$1.png"
+    },
+    {
+      "src": "/sw.js",
+      "dest": "frontend/sw.js"
+    },
+    {
       "src": "/((?!api/).*)",
       "dest": "frontend/index.html"
     }
