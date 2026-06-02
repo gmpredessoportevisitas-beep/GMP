@@ -6,3 +6,4 @@ xhtml2pdf==0.2.16
 python-multipart==0.0.12
 Pillow==11.0.0
 python-dotenv==1.0.1
+
