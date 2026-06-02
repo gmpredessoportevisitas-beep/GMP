@@ -32,9 +32,11 @@ export function AuthProvider({ children }) {
     setLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       });
-
       if (res.ok) {
         const data = await res.json();
         setPerfil(data);
@@ -72,10 +74,11 @@ export function AuthProvider({ children }) {
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ email, password }),
       });
-
       if (!res.ok) {
         const err = await res.json();
         throw new Error(err.detail || 'Error al iniciar sesion');

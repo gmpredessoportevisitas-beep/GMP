@@ -7,6 +7,7 @@ Despliegue: Render (Plan Free)
 Variables de entorno:
   SUPABASE_URL                -> URL del proyecto Supabase
   SUPABASE_SERVICE_ROLE_KEY   -> Service Role Key
+  SUPABASE_ANON_KEY           -> Anon Key (para login de usuarios)
 """
 
 import os
@@ -25,6 +26,7 @@ from supabase import create_client, Client
 from fpdf import FPDF
 from PIL import Image, ImageDraw
 from dotenv import load_dotenv
+import httpx
 
 load_dotenv()
 
@@ -33,10 +35,12 @@ load_dotenv()
 # ===========================================================================
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 
 for var, name in [
     (SUPABASE_URL, "SUPABASE_URL"),
     (SUPABASE_SERVICE_ROLE_KEY, "SUPABASE_SERVICE_ROLE_KEY"),
+    (SUPABASE_ANON_KEY, "SUPABASE_ANON_KEY"),
 ]:
     if not var:
         raise RuntimeError(f"Variable de entorno {name} es obligatoria.")
@@ -599,20 +603,26 @@ async def previsualizar_pdf(data: ReporteCreate, usuario: dict = Depends(get_usu
 
 @app.post("/api/auth/login")
 async def login(data: LoginRequest):
-    """Autentica al usuario contra Supabase Auth y devuelve token + perfil."""
+    """Autentica al usuario contra Supabase Auth via REST API y devuelve token + perfil."""
     try:
-        auth_resp = supabase.auth.sign_in_with_password({
-            "email": data.email,
-            "password": data.password,
-        })
-    except Exception:
-        raise HTTPException(401, "Email o contrasena incorrectos.")
-
-    if not auth_resp.session:
-        raise HTTPException(401, "No se pudo obtener la sesion.")
-
-    token = auth_resp.session.access_token
-    user_id = auth_resp.user.id
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+                headers={
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Content-Type": "application/json",
+                },
+                json={"email": data.email, "password": data.password},
+            )
+        if resp.status_code != 200:
+            raise HTTPException(401, "Email o contrasena incorrectos.")
+        auth_data = resp.json()
+        token = auth_data["access_token"]
+        user_id = auth_data["user"]["id"]
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Error al autenticar: {str(e)}")
 
     result = supabase.table("perfiles").select("*").eq("id", user_id).execute()
     if not result.data:
