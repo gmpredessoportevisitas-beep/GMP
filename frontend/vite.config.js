@@ -37,14 +37,13 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,webmanifest}'],
         runtimeCaching: [
           {
-            // Cache de respuestas de la API para funcionamiento offline básico
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            urlPattern: /^\/api\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'supabase-cache',
+              cacheName: 'api-cache',
               expiration: {
                 maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 24 horas
+                maxAgeSeconds: 60 * 60 * 24,
               },
             },
           },

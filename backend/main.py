@@ -101,6 +101,11 @@ def solo_admin(usuario: dict = Depends(get_usuario_actual)) -> dict:
 # ESQUEMAS Pydantic
 # ===========================================================================
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 class EmpresaCreate(BaseModel):
     nombre: str = Field(..., min_length=1, max_length=255)
     nit: str = Field(default="", max_length=50)
@@ -592,14 +597,48 @@ async def previsualizar_pdf(data: ReporteCreate, usuario: dict = Depends(get_usu
     return StreamingResponse(buf, media_type="application/pdf")
 
 
+@app.post("/api/auth/login")
+async def login(data: LoginRequest):
+    """Autentica al usuario contra Supabase Auth y devuelve token + perfil."""
+    try:
+        auth_resp = supabase.auth.sign_in_with_password({
+            "email": data.email,
+            "password": data.password,
+        })
+    except Exception:
+        raise HTTPException(401, "Email o contrasena incorrectos.")
+
+    if not auth_resp.session:
+        raise HTTPException(401, "No se pudo obtener la sesion.")
+
+    token = auth_resp.session.access_token
+    user_id = auth_resp.user.id
+
+    result = supabase.table("perfiles").select("*").eq("id", user_id).execute()
+    if not result.data:
+        raise HTTPException(403, "Perfil no encontrado. Contacta al administrador.")
+
+    perfil = result.data[0]
+    if not perfil.get("activo", False):
+        raise HTTPException(403, "Cuenta desactivada.")
+
+    return {"access_token": token, "perfil": perfil}
+
+
+@app.get("/api/auth/me")
+async def mi_perfil(usuario: dict = Depends(get_usuario_actual)):
+    """Retorna el perfil del usuario autenticado."""
+    return usuario
+
+
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "timestamp": ahora_iso()}
 
 
 @app.get("/api/me")
-async def mi_perfil(usuario: dict = Depends(get_usuario_actual)):
-    """Retorna el perfil del usuario autenticado (usado por el frontend al iniciar)."""
+async def mi_perfil_legacy(usuario: dict = Depends(get_usuario_actual)):
+    """Backward-compatible alias for /api/auth/me."""
     return usuario
 
 
