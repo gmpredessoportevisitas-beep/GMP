@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = import.meta.env.MODE === 'development' ? 'http://localhost:8000' : '';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -15,37 +15,47 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const cargarPerfil = useCallback(async (s) => {
-    if (!s?.access_token) {
-      setPerfil(null);
-      setLoading(false);
-      return;
-    }
-    try {
-      const res = await fetch(`${API_URL}/api/me`, {
-        method: "GET",
-        headers: { Authorization: `Bearer ${s.access_token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setPerfil(data);
-        setError('');
-      } else {
-        // Token valido en Supabase pero backend no lo acepto
-        // Posible causa: perfil no existe en tabla "perfiles" o backend caido
-        if (res.status === 403) {
-          setError('Tu usuario no tiene un perfil asignado. Contacta al administrador.');
-        } else {
-          setError('No se pudo conectar con el servidor. Verifica que el backend este corriendo.');
-        }
-        setPerfil(null);
-      }
-    } catch {
-      setError('No se pudo conectar con el servidor (¿esta corriendo backend en ' + API_URL + '?)');
-      setPerfil(null);
-    }
+const cargarPerfil = useCallback(async (s) => {
+  if (!s?.access_token) {
+    setPerfil(null);
     setLoading(false);
-  }, []);
+    return;
+  }
+  
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_URL}/api/me`, {
+      method: "GET",
+      headers: { 
+        "Authorization": `Bearer ${s.access_token}`,
+        "Content-Type": "application/json"
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setPerfil(data);
+      setError('');
+    } else {
+      setPerfil(null);
+      if (res.status === 401) {
+        setError('Tu sesión ha expirado o es inválida. Por favor, inicia sesión nuevamente.');
+      } else if (res.status === 403) {
+        setError('Tu usuario no tiene un perfil asignado. Contacta al administrador.');
+      } else if (res.status === 404) {
+        setError('No se encontró el endpoint en el backend (Error 404).');
+      } else {
+        setError(`Error en el servidor (${res.status}). Inténtalo más tarde.`);
+      }
+    }
+  } catch (err) {
+    console.error("Error de conexión detectado en cargarPerfil:", err);
+    setPerfil(null);
+    setError(`No se pudo conectar con el servidor. Verifica tu conexión a internet o el estado del backend.`);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
     let cancelled = false;
