@@ -1,5 +1,8 @@
+import json
+from urllib.request import Request, urlopen
+from urllib.error import URLError
+
 from fastapi import APIRouter, Depends, HTTPException
-import httpx
 
 from config import SUPABASE_URL, SUPABASE_ANON_KEY, supabase
 from schemas import LoginRequest
@@ -9,24 +12,28 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 
 @router.post("/login")
-async def login(data: LoginRequest):
+def login(data: LoginRequest):
+    if not SUPABASE_ANON_KEY:
+        raise HTTPException(500, "SUPABASE_ANON_KEY no configurada en el servidor.")
+
     try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
-                headers={
-                    "apikey": SUPABASE_ANON_KEY,
-                    "Content-Type": "application/json",
-                },
-                json={"email": data.email, "password": data.password},
-            )
-        if resp.status_code != 200:
-            raise HTTPException(401, "Email o contrasena incorrectos.")
-        auth_data = resp.json()
+        body = json.dumps({"email": data.email, "password": data.password}).encode()
+        req = Request(
+            f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
+            data=body,
+            headers={
+                "apikey": SUPABASE_ANON_KEY,
+                "Content-Type": "application/json",
+            },
+        )
+        resp = urlopen(req)
+        auth_data = json.loads(resp.read().decode())
         token = auth_data["access_token"]
         user_id = auth_data["user"]["id"]
     except HTTPException:
         raise
+    except URLError:
+        raise HTTPException(401, "Email o contrasena incorrectos.")
     except Exception as e:
         raise HTTPException(500, f"Error al autenticar: {str(e)}")
 
