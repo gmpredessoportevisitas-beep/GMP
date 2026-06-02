@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['logo.webp', 'favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'GMP - Gestión de Mantenimiento',
         short_name: 'GMP',
@@ -20,17 +20,17 @@ export default defineConfig({
         lang: 'es-CO',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'logo.webp',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'logo.webp',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'logo.webp',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
@@ -38,7 +38,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}'],
         runtimeCaching: [
           {
             // Cache de respuestas de la API para funcionamiento offline básico

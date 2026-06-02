@@ -141,7 +141,7 @@ def ahora_iso() -> str:
 
 def format_fecha(iso: str, tz_offset: int = -5) -> str:
     if not iso:
-        return "\u2014"
+        return "-"
     try:
         dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
         local = dt.astimezone(timezone(timedelta(hours=tz_offset)))
@@ -233,9 +233,11 @@ class ReportePDF(FPDF):
         self.sede = sede
         self.tecnico = tecnico
         self.email_tec = email_tec
-        self.COLOR_PRIMARIO = (26, 82, 118)   # #1a5276
-        self.COLOR_FONDO = (234, 242, 248)    # #eaf2f8
-        self.COLOR_BORDE = (213, 219, 219)    # #d5dbdb
+        # Colores corporativos naranja (#FE6501) y negro
+        self.COLOR_PRIMARIO = (254, 101, 1)    # #FE6501
+        self.COLOR_FONDO = (255, 238, 224)     # naranja muy claro
+        self.COLOR_BORDE = (220, 220, 220)     # gris claro
+        self.COLOR_TEXTO = (0, 0, 0)           # negro puro
         self.set_auto_page_break(auto=True, margin=20)
 
     def header(self):
@@ -246,9 +248,9 @@ class ReportePDF(FPDF):
         self.set_font("Helvetica", "", 9)
         self.set_text_color(100, 100, 100)
         self.cell(0, 6, "Sistema GMP - Gestion de Mantenimiento Preventivo", align="C", new_x="LMARGIN", new_y="NEXT")
-        # Linea separadora
+        # Linea separadora naranja
         self.set_draw_color(*self.COLOR_PRIMARIO)
-        self.set_line_width(0.5)
+        self.set_line_width(0.6)
         self.line(self.l_margin, self.get_y() + 1, self.w - self.r_margin, self.get_y() + 1)
         self.ln(8)
 
@@ -259,15 +261,15 @@ class ReportePDF(FPDF):
         self.set_text_color(150, 150, 150)
         ahora = datetime.now(timezone.utc)
         fecha_gen = format_fecha(ahora.isoformat())
-        self.cell(0, 10, f"Documento generado el {fecha_gen}    |    GMP © {ahora.year}    |    Pagina {self.page_no()}/{{nb}}", align="C")
+        self.cell(0, 10, f"Documento generado el {fecha_gen}    |    GMP \u00a9 {ahora.year}    |    Pagina {self.page_no()}/{{nb}}", align="C")
 
     def seccion_titulo(self, titulo: str):
-        """Titulo de seccion con subrayado."""
+        """Titulo de seccion con subrayado naranja."""
         self.set_font("Helvetica", "B", 11)
         self.set_text_color(*self.COLOR_PRIMARIO)
         self.cell(0, 8, titulo, new_x="LMARGIN", new_y="NEXT")
-        self.set_draw_color(174, 214, 241)
-        self.set_line_width(0.4)
+        self.set_draw_color(254, 180, 100)  # naranja claro para subrayado
+        self.set_line_width(0.5)
         y = self.get_y()
         self.line(self.l_margin, y, self.w - self.r_margin, y)
         self.ln(5)
@@ -275,9 +277,11 @@ class ReportePDF(FPDF):
     def tabla_info(self):
         """Tabla de informacion general con celdas coloreadas."""
         self.seccion_titulo("Informacion General")
-        cols = (45, 85, 45, 85)  # anchos de columnas
+        # Ancho util A4: 210 - 10 - 10 = 190mm
+        # Distribucion por fila: label1(35) + value1(60) + label2(35) + value2(60) = 190mm
+        cols = (35, 60, 35, 60)
         datos = [
-            ("ID Reporte", str(self.reporte.get("id", "—")), "Fecha y Hora", format_fecha(self.reporte.get("fecha_hora", ""))),
+            ("ID Reporte", str(self.reporte.get("id", "-")), "Fecha y Hora", format_fecha(self.reporte.get("fecha_hora", ""))),
             ("Empresa", self.empresa, "Sede / Punto", self.sede),
             ("Tecnico", self.tecnico, "Email Tecnico", self.email_tec),
         ]
@@ -286,36 +290,36 @@ class ReportePDF(FPDF):
         self.ln(5)
 
     def _fila_tabla(self, celdas: tuple, anchos: tuple):
-        """Dibuja una fila de la tabla con label (fondo azul) + value."""
+        """Dibuja una fila de la tabla con label (fondo claro) + value."""
         h = 8
         for i, (label, value) in enumerate([(celdas[0], celdas[1]), (celdas[2], celdas[3])]):
             # Label
             self.set_fill_color(*self.COLOR_FONDO)
-            self.set_text_color(*self.COLOR_PRIMARIO)
+            self.set_text_color(*self.COLOR_TEXTO)
             self.set_font("Helvetica", "B", 8)
             self.cell(anchos[i * 2], h, f"  {label}", border=1, fill=True)
-            # Value
+            # Value (truncado a 55 caracteres para que entre en la celda)
+            val = str(value)
+            if len(val) > 55:
+                val = val[:52] + "..."
             self.set_fill_color(255, 255, 255)
-            self.set_text_color(50, 50, 50)
-            self.set_font("Helvetica", "", 9)
-            self.cell(anchos[i * 2 + 1], h, f"  {value}", border=1, fill=True, new_x="RIGHT", new_y="LAST")
+            self.set_text_color(*self.COLOR_TEXTO)
+            self.set_font("Helvetica", "", 8)
+            self.cell(anchos[i * 2 + 1], h, f"  {val}", border=1, fill=True, new_x="RIGHT", new_y="LAST")
         self.ln()
 
     def seccion_observaciones(self):
         """Observaciones con recuadro."""
         self.seccion_titulo("Observaciones / Hallazgos")
         obs = self.reporte.get("observaciones", "").strip() or "Sin observaciones registradas."
-        self.set_font("Helvetica", "", 10)
-        self.set_text_color(50, 50, 50)
-        self.set_fill_color(249, 251, 253)
-        x0 = self.get_x()
-        y0 = self.get_y()
-        # Recuadro
+        self.set_font("Helvetica", "", 9)
+        self.set_text_color(*self.COLOR_TEXTO)
+        self.set_fill_color(252, 248, 245)
         self.set_draw_color(*self.COLOR_BORDE)
         self.set_line_width(0.3)
         ancho = self.w - self.l_margin - self.r_margin
-        self.multi_cell(ancho, 6, obs, border=1, fill=True, align="L")
-        self.ln(8)
+        self.multi_cell(ancho, 5, obs, border=1, fill=True, align="L")
+        self.ln(6)
 
     def seccion_firma(self):
         """Firma del cliente como imagen PNG generada desde el SVG vectorial."""
@@ -324,12 +328,11 @@ class ReportePDF(FPDF):
         if firma_raw:
             png_buf = svg_paths_a_png_bytes(firma_raw)
             if png_buf:
-                # Guardar en archivo temporal para que fpdf2 lo lea
                 with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
                     tmp.write(png_buf.read())
                     tmp_path = tmp.name
                 try:
-                    img_w = 80  # mm de ancho
+                    img_w = 80
                     x = (self.w - img_w) / 2
                     self.image(tmp_path, x=x, w=img_w)
                 finally:
@@ -339,10 +342,10 @@ class ReportePDF(FPDF):
             self.set_text_color(150, 150, 150)
             self.cell(0, 30, "Sin firma registrada", align="C", new_x="LMARGIN", new_y="NEXT")
         # Linea de firma
-        self.set_draw_color(50, 50, 50)
+        self.set_draw_color(*self.COLOR_TEXTO)
         self.set_line_width(0.4)
         x_line = (self.w - 60) / 2
-        y_line = self.get_y() + 15
+        y_line = self.get_y() + 12
         self.line(x_line, y_line, x_line + 60, y_line)
         self.set_font("Helvetica", "", 8)
         self.set_text_color(100, 100, 100)
@@ -556,11 +559,11 @@ async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actua
     if usuario["rol"] != "admin" and r.get("tecnico_id") != usuario["id"]:
         raise HTTPException(403, "No tienes permiso para ver este reporte.")
 
-    empresa_nombre = r.get("empresas", {}).get("nombre", "\u2014") if isinstance(r.get("empresas"), dict) else "\u2014"
-    sede_nombre = r.get("sedes", {}).get("nombre", "\u2014") if isinstance(r.get("sedes"), dict) else "\u2014"
+    empresa_nombre = r.get("empresas", {}).get("nombre", "-") if isinstance(r.get("empresas"), dict) else "-"
+    sede_nombre = r.get("sedes", {}).get("nombre", "-") if isinstance(r.get("sedes"), dict) else "-"
     perfil = r.get("perfiles", {}) if isinstance(r.get("perfiles"), dict) else {}
-    tecnico_nombre = perfil.get("nombre_completo", "\u2014")
-    tecnico_email = perfil.get("email", "\u2014")
+    tecnico_nombre = perfil.get("nombre_completo", "-")
+    tecnico_email = perfil.get("email", "-")
 
     # Generar PDF programaticamente con fpdf2 (Zero-Storage: todo en RAM)
     buf = generar_pdf_fpdf(r, empresa_nombre, sede_nombre, tecnico_nombre, tecnico_email)
@@ -568,6 +571,26 @@ async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actua
     filename = f"reporte_{reporte_id}.pdf"
     return StreamingResponse(buf, media_type="application/pdf",
                              headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@app.post("/api/preview-pdf")
+async def previsualizar_pdf(data: ReporteCreate, usuario: dict = Depends(get_usuario_actual)):
+    """Genera PDF de previsualizacion SIN guardar en BD (Zero-Storage)."""
+    empresa_res = supabase.table("empresas").select("nombre").eq("id", data.empresa_id).execute()
+    sede_res = supabase.table("sedes").select("nombre").eq("id", data.sede_id).execute()
+    empresa_nombre = empresa_res.data[0]["nombre"] if empresa_res.data else "-"
+    sede_nombre = sede_res.data[0]["nombre"] if sede_res.data else "-"
+    tecnico_nombre = usuario.get("nombre_completo", "-")
+    tecnico_email = usuario.get("email", "-")
+
+    preview = {
+        "id": "-",
+        "fecha_hora": ahora_iso(),
+        "observaciones": data.observaciones,
+        "firma_vector": data.firma_vector,
+    }
+    buf = generar_pdf_fpdf(preview, empresa_nombre, sede_nombre, tecnico_nombre, tecnico_email)
+    return StreamingResponse(buf, media_type="application/pdf")
 
 
 @app.get("/api/health")
