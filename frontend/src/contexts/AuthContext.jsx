@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
     }
     try {
       const res = await fetch(`${API_URL}/api/me`, {
+        method: "GET",
         headers: { Authorization: `Bearer ${s.access_token}` },
       });
       if (res.ok) {
