@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon'
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const LIMIT = 20;
@@ -135,8 +136,7 @@ export default function AdminReportes() {
 
       {loading ? (
         <div className="flex flex-col items-center py-20">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-primary-600 border-t-transparent mb-4" />
-          <p className="text-sm text-gray-400">Cargando reportes...</p>
+          <AnimatedWifiIcon/>
         </div>
       ) : !reportes.length ? (
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-16 text-center">

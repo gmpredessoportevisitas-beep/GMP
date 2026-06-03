@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -7,14 +8,20 @@ export default function AdminUsuarios() {
   const { getToken } = useAuth();
   const [items, setItems] = useState([]);
   const [form, setForm] = useState({ email: '', password: '', nombre_completo: '', rol: 'tecnico' });
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [cargando, setCargando] = useState(true);
   const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
 
   async function cargar() {
-    const t = await getToken();
-    const res = await fetch(`${API}/api/admin/usuarios`, { headers: { Authorization: `Bearer ${t}` } });
-    if (res.ok) setItems(await res.json());
+    setCargando(true);
+    try {
+      const t = await getToken();
+      const res = await fetch(`${API}/api/admin/usuarios`, { headers: { Authorization: `Bearer ${t}` } });
+      if (res.ok) setItems(await res.json());
+    } finally {
+      setCargando(false);
+    }
   }
 
   useEffect(() => { cargar(); }, []);
@@ -26,7 +33,7 @@ export default function AdminUsuarios() {
 
   async function crearUsuario(e) {
     e.preventDefault();
-    setLoading(true); setMsg('');
+    setSaving(true); setMsg('');
     const t = await getToken();
     const res = await fetch(`${API}/api/admin/usuarios`, {
       method: 'POST',
@@ -41,7 +48,7 @@ export default function AdminUsuarios() {
       const err = await res.json().catch(() => ({}));
       setMsg(err.detail || 'Error al crear usuario.');
     }
-    setLoading(false);
+    setSaving(false);
   }
 
   async function toggleActivo(userId) {
@@ -116,16 +123,16 @@ export default function AdminUsuarios() {
             </div>
           </div>
           <div className="flex gap-3 mt-6">
-            <button type="submit" disabled={loading}
+            <button type="submit" disabled={saving}
               className="py-3 px-6 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all disabled:opacity-50 shadow-md flex items-center gap-2">
-              {loading ? (
+              {saving ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
               ) : (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                 </svg>
               )}
-              {loading ? 'Creando...' : 'Crear Usuario'}
+              {saving ? 'Creando...' : 'Crear Usuario'}
             </button>
             <button type="button" onClick={resetForm}
               className="py-3 px-6 bg-white text-gray-700 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all">
@@ -136,63 +143,69 @@ export default function AdminUsuarios() {
       )}
 
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
-                <Th className="text-white/80">Nombre</Th>
-                <Th className="text-white/80">Email</Th>
-                <Th className="text-white/80">Rol</Th>
-                <Th className="text-white/80">Estado</Th>
-                <Th className="text-white/80 text-center">Accion</Th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {items.map((i) => (
-                <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
-                  <td className="px-5 py-4 text-sm font-semibold text-gray-800">{i.nombre_completo}</td>
-                  <td className="px-5 py-4 text-sm text-gray-500">{i.email}</td>
-                  <td className="px-5 py-4 text-sm">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
-                      i.rol === 'admin' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {i.rol === 'admin' ? 'Administrador' : 'Tecnico'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-sm">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
-                      i.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${i.activo ? 'bg-green-600' : 'bg-red-600'}`} />
-                      {i.activo ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <button onClick={() => toggleActivo(i.id)}
-                      className={`py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${
-                        i.activo
-                          ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                          : 'text-green-600 bg-green-50 hover:bg-green-100'
+        {cargando ? (
+          <div className="flex flex-col items-center py-20">
+            <AnimatedWifiIcon />
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
+                  <Th className="text-white/80">Nombre</Th>
+                  <Th className="text-white/80">Email</Th>
+                  <Th className="text-white/80">Rol</Th>
+                  <Th className="text-white/80">Estado</Th>
+                  <Th className="text-white/80 text-center">Accion</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {items.map((i) => (
+                  <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
+                    <td className="px-5 py-4 text-sm font-semibold text-gray-800">{i.nombre_completo}</td>
+                    <td className="px-5 py-4 text-sm text-gray-500">{i.email}</td>
+                    <td className="px-5 py-4 text-sm">
+                      <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
+                        i.rol === 'admin' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'
                       }`}>
-                      {i.activo ? 'Desactivar' : 'Activar'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="text-center py-12 text-gray-400">
-                    <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                    </svg>
-                    <p className="font-medium">Sin usuarios registrados</p>
-                    <p className="text-xs mt-1">Haz clic en "Nuevo Usuario" para crear el primero.</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+                        {i.rol === 'admin' ? 'Administrador' : 'Tecnico'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-sm">
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
+                        i.activo ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${i.activo ? 'bg-green-600' : 'bg-red-600'}`} />
+                        {i.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <button onClick={() => toggleActivo(i.id)}
+                        className={`py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${
+                          i.activo
+                            ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                            : 'text-green-600 bg-green-50 hover:bg-green-100'
+                        }`}>
+                        {i.activo ? 'Desactivar' : 'Activar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {items.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-12 text-gray-400">
+                      <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      <p className="font-medium">Sin usuarios registrados</p>
+                      <p className="text-xs mt-1">Haz clic en "Nuevo Usuario" para crear el primero.</p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
