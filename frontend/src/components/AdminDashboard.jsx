@@ -98,7 +98,7 @@ export default function AdminDashboard() {
 
         {/* Menu movil */}
         {menuOpen && (
-          <div className="md:hidden bg-black/95 border-t border-primary-800 shadow-xl absolute z-20 w-full">
+          <div className="md:hidden bg-black/95 border-t border-primary-800 shadow-xl absolute top-14 z-20 w-full">
             <div className="py-2 px-3 space-y-1">
               {TABS.map((t) => (
                 <button key={t.id} onClick={() => { setTab(t.id); setMenuOpen(false); }}
@@ -123,7 +123,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Contenido */}
-        <main className="flex-1 p-4 md:p-6 overflow-auto bg-gradient-to-b from-gray-50 to-white">
+        <main className="flex-1 sm:p-4 md:p-6 overflow-auto bg-gradient-to-b from-gray-50 to-white">
           {tab === 'reportes' && <AdminReportes />}
           {tab === 'empresas' && <AdminEmpresas />}
           {tab === 'sedes' && <AdminSedes />}

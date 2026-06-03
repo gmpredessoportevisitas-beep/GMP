@@ -8,8 +8,8 @@ export default function AdminSedes() {
   } = useAdminSedes();
 
   return (
-    <div className="animate-fade-in max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="animate-fade-in max-w-[100vw] sm:mx-auto">
+      <div className="flex flex-col sm:gap-0 gap-4 sm:flex-row items-center sm:justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Sedes</h2>
           <p className="text-sm text-gray-500 mt-0.5">Gestion de puntos de trabajo por empresa</p>
@@ -89,7 +89,7 @@ export default function AdminSedes() {
         </form>
       )}
 
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-x-auto w-full">
         {cargando ? (
           <div className="flex flex-col items-center py-20">
             <AnimatedWifiIcon />
@@ -106,7 +106,7 @@ export default function AdminSedes() {
                   <Th className="text-white/80 text-center">Acciones</Th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-gray-100 w-24  overflow-scroll">
                 {items.map((i) => (
                   <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
                     <td className="px-5 py-4 text-sm text-gray-400 font-mono">#{i.id}</td>

@@ -111,7 +111,7 @@ class ReportePDF(FPDF):
     def header(self):
         self.set_font("Helvetica", "B", 18)
         self.set_text_color(*self.COLOR_PRIMARIO)
-        self.cell(0, 10, "REPORTE DE MANTENIMIENTO", align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 10, "SOPORTE DE VISITAS", align="C", new_x="LMARGIN", new_y="NEXT")
         self.set_font("Helvetica", "", 9)
         self.set_text_color(100, 100, 100)
         self.cell(0, 6, "Sistema GMP - Gestion de Mantenimiento Preventivo", align="C", new_x="LMARGIN", new_y="NEXT")

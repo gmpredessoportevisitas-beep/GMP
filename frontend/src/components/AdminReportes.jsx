@@ -20,8 +20,8 @@ export default function AdminReportes() {
   function csv(t) { return `"${String(t||'').replace(/"/g,'""')}"`; }
 
   return (
-    <div className="animate-fade-in max-w-6xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="animate-fade-in max-w-[100vw] sm:mx-auto">
+      <div className="flex flex-col sm:gap-0 gap-4 sm:flex-row items-center sm:justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Reportes</h2>
           <p className="text-sm text-gray-500 mt-0.5">Historial de reportes de mantenimiento generados</p>

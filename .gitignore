@@ -9,6 +9,7 @@ venv/
 .env
 .env.local
 .env.*.local
+.agents
 
 # Build
 frontend/dist/

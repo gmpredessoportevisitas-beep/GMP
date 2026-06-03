@@ -8,8 +8,8 @@ export default function AdminEmpresas() {
   } = useAdminEmpresas();
 
   return (
-    <div className="animate-fade-in max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div className="animate-fade-in max-w-[100vw] sm:mx-auto">
+      <div className="flex flex-col sm:gap-0 gap-4 sm:flex-row items-center sm:justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Empresas</h2>
           <p className="text-sm text-gray-500 mt-0.5">Gestion de empresas registradas en el sistema</p>
