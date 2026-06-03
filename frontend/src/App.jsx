@@ -3,6 +3,7 @@ import Login from './components/Login';
 import TecnicoView from './components/TecnicoView';
 import AdminDashboard from './components/AdminDashboard';
 import AnimatedWifiIcon from './assets/icons/AnimatedWifiIcon';
+import { Analytics } from "@vercel/analytics/react"
 
 function AppContent() {
   const { perfil, loading, error } = useAuth();
@@ -27,6 +28,7 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
+      <Analytics />
       <AppContent />
     </AuthProvider>
   );
