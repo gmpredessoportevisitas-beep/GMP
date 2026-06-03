@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
+import { EncuestaPregunta } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
-export default function EncuestaForm({ reporteId }) {
-  const [preguntas, setPreguntas] = useState([]);
-  const [respuestas, setRespuestas] = useState({});
+export default function EncuestaForm({ reporteId }: { reporteId: number }) {
+  const [preguntas, setPreguntas] = useState<EncuestaPregunta[]>([]);
+  const [respuestas, setRespuestas] = useState<Record<number, number>>({});
   const [observaciones, setObservaciones] = useState('');
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
-  const [resultado, setResultado] = useState(null);
+  const [resultado, setResultado] = useState<string | null>(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -16,20 +17,20 @@ export default function EncuestaForm({ reporteId }) {
       try {
         const res = await fetch(`${API}/api/encuesta-preguntas`);
         if (!res.ok) throw new Error('Error al cargar preguntas');
-        const data = await res.json();
+        const data = await res.json() as EncuestaPregunta[];
         setPreguntas(data);
-        const inicial = {};
+        const inicial: Record<number, number> = {};
         data.forEach(p => { inicial[p.id] = 0; });
         setRespuestas(inicial);
       } catch (err) {
-        setError(err.message);
+        setError((err as Error).message);
       } finally {
         setLoading(false);
       }
     })();
   }, []);
 
-  async function enviar(e) {
+  async function enviar(e: React.FormEvent) {
     e.preventDefault();
     const sinResponder = Object.values(respuestas).some(v => v === 0);
     if (sinResponder) {
@@ -57,13 +58,13 @@ export default function EncuestaForm({ reporteId }) {
       }
       setResultado('exito');
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     } finally {
       setEnviando(false);
     }
   }
 
-  function setValor(preguntaId, valor) {
+  function setValor(preguntaId: number, valor: number) {
     setRespuestas(prev => ({ ...prev, [preguntaId]: valor }));
   }
 

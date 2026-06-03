@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 
 
 class LoginRequest(BaseModel):
-    email: str
+    username: str
     password: str
 
 
@@ -22,7 +22,7 @@ class SedeCreate(BaseModel):
 
 
 class UsuarioCreate(BaseModel):
-    email: str = Field(..., max_length=255)
+    username: str = Field(..., min_length=1, max_length=50)
     password: str = Field(..., min_length=6, max_length=100)
     nombre_completo: str = Field(..., min_length=1, max_length=255)
     rol: str = Field(..., pattern="^(admin|tecnico)$")

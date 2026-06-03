@@ -15,9 +15,9 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 def login(data: LoginRequest):
     if not SUPABASE_ANON_KEY:
         raise HTTPException(500, "SUPABASE_ANON_KEY no configurada en el servidor.")
-
     try:
-        body = json.dumps({"email": data.email, "password": data.password}).encode()
+        email = f"{data.username}@gmp.com"
+        body = json.dumps({"email": email, "password": data.password}).encode()
         req = Request(
             f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
             data=body,
@@ -33,7 +33,7 @@ def login(data: LoginRequest):
     except HTTPException:
         raise
     except URLError:
-        raise HTTPException(401, "Email o contrasena incorrectos.")
+        raise HTTPException(401, "Usuario o contrasena incorrectos.")
     except Exception as e:
         raise HTTPException(500, f"Error al autenticar: {str(e)}")
 

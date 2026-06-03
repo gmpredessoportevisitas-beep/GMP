@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Perfil, UsuarioForm } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
 export default function useAdminUsuarios() {
   const { getToken } = useAuth();
-  const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ email: '', password: '', nombre_completo: '', rol: 'tecnico' });
+  const [items, setItems] = useState<Perfil[]>([]);
+  const [form, setForm] = useState<UsuarioForm>({ username: '', password: '', nombre_completo: '', rol: 'tecnico' });
   const [saving, setSaving] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [msg, setMsg] = useState('');
@@ -17,7 +18,7 @@ export default function useAdminUsuarios() {
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/admin/usuarios`, { headers: { Authorization: `Bearer ${t}` } });
-      if (res.ok) setItems(await res.json());
+      if (res.ok) setItems(await res.json() as Perfil[]);
     } finally {
       setCargando(false);
     }
@@ -26,11 +27,11 @@ export default function useAdminUsuarios() {
   useEffect(() => { cargar(); }, [cargar]);
 
   const resetForm = useCallback(() => {
-    setForm({ email: '', password: '', nombre_completo: '', rol: 'tecnico' });
+    setForm({ username: '', password: '', nombre_completo: '', rol: 'tecnico' });
     setShowForm(false);
   }, []);
 
-  const crearUsuario = useCallback(async (e) => {
+  const crearUsuario = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true); setMsg('');
     try {
@@ -53,7 +54,7 @@ export default function useAdminUsuarios() {
     }
   }, [getToken, form, resetForm, cargar]);
 
-  const toggleActivo = useCallback(async (userId) => {
+  const toggleActivo = useCallback(async (userId: string) => {
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/admin/usuarios/${userId}/toggle`, {

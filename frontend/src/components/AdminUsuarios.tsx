@@ -1,5 +1,10 @@
+import { ReactNode } from 'react';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 import useAdminUsuarios from '../hooks/useAdminUsuarios';
+
+function Th({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
+}
 
 export default function AdminUsuarios() {
   const {
@@ -51,8 +56,8 @@ export default function AdminUsuarios() {
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-              <input placeholder="correo@ejemplo.com" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} required
+              <label className="block text-sm font-semibold text-gray-700 mb-1">Usuario <span className="text-red-500">*</span></label>
+              <input placeholder="Nombre de usuario" value={form.username} onChange={e => setForm({...form, username: e.target.value})} required
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
@@ -100,7 +105,7 @@ export default function AdminUsuarios() {
               <thead>
                 <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
                   <Th className="text-white/80">Nombre</Th>
-                  <Th className="text-white/80">Email</Th>
+                  <Th className="text-white/80">Usuario</Th>
                   <Th className="text-white/80">Rol</Th>
                   <Th className="text-white/80">Estado</Th>
                   <Th className="text-white/80 text-center">Accion</Th>
@@ -110,7 +115,7 @@ export default function AdminUsuarios() {
                 {items.map((i) => (
                   <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
                     <td className="px-5 py-4 text-sm font-semibold text-gray-800">{i.nombre_completo}</td>
-                    <td className="px-5 py-4 text-sm text-gray-500">{i.email}</td>
+                    <td className="px-5 py-4 text-sm text-gray-500">{i.username}</td>
                     <td className="px-5 py-4 text-sm">
                       <span className={`px-3 py-1 rounded-lg text-xs font-bold ${
                         i.rol === 'admin' ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'
@@ -145,7 +150,7 @@ export default function AdminUsuarios() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                       </svg>
                       <p className="font-medium">Sin usuarios registrados</p>
-                      <p className="text-xs mt-1">Haz clic en "Nuevo Usuario" para crear el primero.</p>
+                      <p className="text-xs mt-1">Haz clic en &quot;Nuevo Usuario&quot; para crear el primero.</p>
                     </td>
                   </tr>
                 )}
@@ -156,8 +161,4 @@ export default function AdminUsuarios() {
       </div>
     </div>
   );
-}
-
-function Th({ children, className = '' }) {
-  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
 }

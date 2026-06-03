@@ -68,11 +68,12 @@ async def listar_usuarios(admin: dict = Depends(solo_admin)):
 @router.post("/usuarios", status_code=201)
 async def crear_usuario(data: UsuarioCreate, admin: dict = Depends(solo_admin)):
     try:
+        email = f"{data.username}@gmp.com"
         auth_resp = supabase.auth.admin.create_user({
-            "email": data.email,
+            "email": email,
             "password": data.password,
             "email_confirm": True,
-            "user_metadata": {"nombre_completo": data.nombre_completo, "rol": data.rol},
+            "user_metadata": {"nombre_completo": data.nombre_completo, "rol": data.rol, "username": data.username},
         })
     except Exception as e:
         raise HTTPException(500, f"Error al crear usuario en Auth: {str(e)}")
@@ -84,16 +85,17 @@ async def crear_usuario(data: UsuarioCreate, admin: dict = Depends(solo_admin)):
     try:
         supabase.table("perfiles").upsert({
             "id": user_id,
-            "email": data.email,
+            "email": email,
             "nombre_completo": data.nombre_completo,
             "rol": data.rol,
+            "username": data.username,
             "activo": True,
             "creado_en": ahora_iso(),
         }).execute()
     except Exception:
         pass
 
-    return {"id": user_id, "email": data.email, "rol": data.rol, "nombre_completo": data.nombre_completo}
+    return {"id": user_id, "username": data.username, "rol": data.rol, "nombre_completo": data.nombre_completo}
 
 
 @router.put("/usuarios/{user_id}")

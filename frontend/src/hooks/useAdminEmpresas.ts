@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Empresa, EmpresaForm } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
 export default function useAdminEmpresas() {
   const { getToken } = useAuth();
-  const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ nombre: '', nit: '', direccion: '', telefono: '', email: '' });
-  const [editId, setEditId] = useState(null);
+  const [items, setItems] = useState<Empresa[]>([]);
+  const [form, setForm] = useState<EmpresaForm>({ nombre: '', nit: '', direccion: '', telefono: '', email: '' });
+  const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [msg, setMsg] = useState('');
@@ -18,7 +19,7 @@ export default function useAdminEmpresas() {
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } });
-      if (res.ok) setItems(await res.json());
+      if (res.ok) setItems(await res.json() as Empresa[]);
     } finally {
       setCargando(false);
     }
@@ -32,7 +33,7 @@ export default function useAdminEmpresas() {
     setShowForm(false);
   }, []);
 
-  const guardar = useCallback(async (e) => {
+  const guardar = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setMsg('');
@@ -58,13 +59,13 @@ export default function useAdminEmpresas() {
     }
   }, [getToken, editId, form, resetForm, cargar]);
 
-  const editar = useCallback((item) => {
+  const editar = useCallback((item: Empresa) => {
     setEditId(item.id);
     setForm({ nombre: item.nombre, nit: item.nit || '', direccion: item.direccion || '', telefono: item.telefono || '', email: item.email || '' });
     setShowForm(true);
   }, []);
 
-  const eliminar = useCallback(async (id, nombre) => {
+  const eliminar = useCallback(async (id: number, nombre: string) => {
     if (!window.confirm(`Eliminar "${nombre}"? Esta accion no se puede deshacer.`)) return;
     try {
       const t = await getToken();

@@ -1,20 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Reporte, EncuestaData } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const LIMIT = 20;
 
 export default function useAdminReportes() {
   const { getToken } = useAuth();
-  const [reportes, setReportes] = useState([]);
+  const [reportes, setReportes] = useState<Reporte[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pagina, setPagina] = useState(0);
-  const [descargando, setDescargando] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [previewLoadingId, setPreviewLoadingId] = useState(null);
-  const [msg, setMsg] = useState({ tipo: '', texto: '' });
-  const [encuestaData, setEncuestaData] = useState(null);
+  const [descargando, setDescargando] = useState<number | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
+  const [msg, setMsg] = useState<{ tipo: string; texto: string }>({ tipo: '', texto: '' });
+  const [encuestaData, setEncuestaData] = useState<EncuestaData | null>(null);
   const [encuestaLoading, setEncuestaLoading] = useState(false);
 
   const cargar = useCallback(async (offset = 0) => {
@@ -25,9 +26,9 @@ export default function useAdminReportes() {
         headers: { Authorization: `Bearer ${t}` },
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
-      setReportes(await res.json());
+      setReportes(await res.json() as Reporte[]);
     } catch (err) {
-      setError(err.message);
+      setError((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -35,7 +36,7 @@ export default function useAdminReportes() {
 
   useEffect(() => { cargar(pagina * LIMIT); }, [pagina, cargar]);
 
-  const descargarPDF = useCallback(async (id) => {
+  const descargarPDF = useCallback(async (id: number) => {
     setDescargando(id);
     try {
       const t = await getToken();
@@ -53,13 +54,13 @@ export default function useAdminReportes() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Error al descargar PDF: ' + err.message);
+      alert('Error al descargar PDF: ' + (err as Error).message);
     } finally {
       setDescargando(null);
     }
   }, [getToken]);
 
-  const previsualizar = useCallback(async (id) => {
+  const previsualizar = useCallback(async (id: number) => {
     setPreviewLoadingId(id);
     setMsg({ tipo: '', texto: '' });
     try {
@@ -72,7 +73,7 @@ export default function useAdminReportes() {
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
     } catch (err) {
-      setMsg({ tipo: 'error', texto: err.message });
+      setMsg({ tipo: 'error', texto: (err as Error).message });
     } finally {
       setPreviewLoadingId(null);
     }
@@ -82,7 +83,7 @@ export default function useAdminReportes() {
     if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
   }, [previewUrl]);
 
-  const verEncuesta = useCallback(async (reporteId) => {
+  const verEncuesta = useCallback(async (reporteId: number) => {
     setEncuestaLoading(true);
     setMsg({ tipo: '', texto: '' });
     try {
@@ -94,10 +95,10 @@ export default function useAdminReportes() {
         if (res.status === 404) { setMsg({ tipo: 'info', texto: 'Este reporte no tiene encuesta registrada.' }); }
         else throw new Error('Error al consultar encuesta');
       } else {
-        setEncuestaData(await res.json());
+        setEncuestaData(await res.json() as EncuestaData);
       }
     } catch (err) {
-      setMsg({ tipo: 'error', texto: err.message });
+      setMsg({ tipo: 'error', texto: (err as Error).message });
     } finally {
       setEncuestaLoading(false);
     }
@@ -107,8 +108,8 @@ export default function useAdminReportes() {
 
   const exportarCSV = useCallback(() => {
     if (!reportes.length) return;
-    const csv = (t) => `"${String(t || '').replace(/"/g, '""')}"`;
-    const formatFecha = (iso) => {
+    const csv = (t: unknown) => `"${String(t || '').replace(/"/g, '""')}"`;
+    const formatFecha = (iso: string) => {
       if (!iso) return '';
       try { return new Date(iso).toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }); }
       catch { return iso; }
@@ -134,7 +135,7 @@ export default function useAdminReportes() {
     a.click();
   }, [reportes]);
 
-  const setMsgAction = useCallback((m) => setMsg(m), []);
+  const setMsgAction = useCallback((m: { tipo: string; texto: string }) => setMsg(m), []);
 
   return {
     reportes, loading, error, pagina, setPagina,

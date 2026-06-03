@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Sede, Empresa, SedeForm } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
 export default function useAdminSedes() {
   const { getToken } = useAuth();
-  const [items, setItems] = useState([]);
-  const [empresas, setEmpresas] = useState([]);
-  const [form, setForm] = useState({ empresa_id: '', nombre: '', direccion: '', ciudad: '' });
-  const [editId, setEditId] = useState(null);
+  const [items, setItems] = useState<Sede[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [form, setForm] = useState<SedeForm>({ empresa_id: '', nombre: '', direccion: '', ciudad: '' });
+  const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [msg, setMsg] = useState('');
@@ -22,8 +23,8 @@ export default function useAdminSedes() {
         fetch(`${API}/api/admin/sedes`, { headers: { Authorization: `Bearer ${t}` } }),
         fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
       ]);
-      if (rSedes.ok) setItems(await rSedes.json());
-      if (rEmp.ok) setEmpresas(await rEmp.json());
+      if (rSedes.ok) setItems(await rSedes.json() as Sede[]);
+      if (rEmp.ok) setEmpresas(await rEmp.json() as Empresa[]);
     } finally {
       setCargando(false);
     }
@@ -37,7 +38,7 @@ export default function useAdminSedes() {
     setShowForm(false);
   }, []);
 
-  const guardar = useCallback(async (e) => {
+  const guardar = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true); setMsg('');
     try {
@@ -56,13 +57,13 @@ export default function useAdminSedes() {
     }
   }, [getToken, form, editId, resetForm, cargar]);
 
-  const editar = useCallback((item) => {
+  const editar = useCallback((item: Sede) => {
     setEditId(item.id);
     setForm({ empresa_id: String(item.empresa_id), nombre: item.nombre, direccion: item.direccion || '', ciudad: item.ciudad || '' });
     setShowForm(true);
   }, []);
 
-  const eliminar = useCallback(async (id, nombre) => {
+  const eliminar = useCallback(async (id: number, nombre: string) => {
     if (!window.confirm(`Eliminar "${nombre}"? Esta accion no se puede deshacer.`)) return;
     try {
       const t = await getToken();
@@ -73,7 +74,7 @@ export default function useAdminSedes() {
     }
   }, [getToken, cargar]);
 
-  const empresaNombre = useCallback((id) => {
+  const empresaNombre = useCallback((id: number) => {
     const e = empresas.find(x => x.id === id);
     return e ? e.nombre : '—';
   }, [empresas]);

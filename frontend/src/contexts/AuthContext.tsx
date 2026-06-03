@@ -1,28 +1,38 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { Perfil } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '';
 const TOKEN_KEY = 'gmp_token';
 
-function getStoredToken() {
+function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
-function setStoredToken(token) {
+function setStoredToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
 }
 
-function removeStoredToken() {
+function removeStoredToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
-const AuthContext = createContext(null);
+interface AuthContextType {
+  perfil: Perfil | null;
+  loading: boolean;
+  error: string;
+  login: (username: string, password: string) => Promise<{ access_token: string; perfil: Perfil }>;
+  logout: () => void;
+  getToken: () => string;
+}
 
-export function AuthProvider({ children }) {
-  const [perfil, setPerfil] = useState(null);
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [perfil, setPerfil] = useState<Perfil | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const cargarPerfil = useCallback(async (token) => {
+  const cargarPerfil = useCallback(async (token: string) => {
     if (!token) {
       setPerfil(null);
       setLoading(false);
@@ -38,7 +48,7 @@ export function AuthProvider({ children }) {
         },
       });
       if (res.ok) {
-        const data = await res.json();
+        const data = await res.json() as Perfil;
         setPerfil(data);
         setError('');
       } else {
@@ -69,7 +79,7 @@ export function AuthProvider({ children }) {
     }
   }, [cargarPerfil]);
 
-  async function login(email, password) {
+  async function login(username: string, password: string) {
     setError('');
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
@@ -77,7 +87,7 @@ export function AuthProvider({ children }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ username, password }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -102,7 +112,7 @@ export function AuthProvider({ children }) {
     setError('');
   }
 
-  function getToken() {
+  function getToken(): string {
     return getStoredToken() || '';
   }
 

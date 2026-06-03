@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { Empresa, Sede, EncuestaPregunta } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
 export default function useTecnicoView() {
   const { getToken, perfil, logout } = useAuth();
 
-  const [empresas, setEmpresas] = useState([]);
-  const [sedes, setSedes] = useState([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
+  const [sedes, setSedes] = useState<Sede[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   const [empresaId, setEmpresaId] = useState('');
@@ -21,14 +22,14 @@ export default function useTecnicoView() {
   const [motivoVisitaOtro, setMotivoVisitaOtro] = useState('');
   const [firmaSvg, setFirmaSvg] = useState('');
 
-  const [preguntas, setPreguntas] = useState([]);
-  const [respuestasEncuesta, setRespuestasEncuesta] = useState({});
+  const [preguntas, setPreguntas] = useState<EncuestaPregunta[]>([]);
+  const [respuestasEncuesta, setRespuestasEncuesta] = useState<Record<number, number>>({});
   const [encuestaObservaciones, setEncuestaObservaciones] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [descargando, setDescargando] = useState(false);
-  const [guardado, setGuardado] = useState(null);
-  const [msg, setMsg] = useState({ tipo: '', texto: '' });
+  const [guardado, setGuardado] = useState<{ id: number } | null>(null);
+  const [msg, setMsg] = useState<{ tipo: string; texto: string }>({ tipo: '', texto: '' });
 
   useEffect(() => {
     (async () => {
@@ -38,12 +39,12 @@ export default function useTecnicoView() {
         fetch(`${API}/api/catalogos/sedes`, { headers: { Authorization: `Bearer ${t}` } }),
         fetch(`${API}/api/encuesta-preguntas`),
       ]);
-      if (rE.ok) setEmpresas(await rE.json());
-      if (rS.ok) setSedes(await rS.json());
+      if (rE.ok) setEmpresas(await rE.json() as Empresa[]);
+      if (rS.ok) setSedes(await rS.json() as Sede[]);
       if (rP.ok) {
-        const data = await rP.json();
+        const data = await rP.json() as EncuestaPregunta[];
         setPreguntas(data);
-        const inicial = {};
+        const inicial: Record<number, number> = {};
         data.forEach(p => { inicial[p.id] = 0; });
         setRespuestasEncuesta(inicial);
       }
@@ -88,13 +89,13 @@ export default function useTecnicoView() {
       setGuardado(data.reporte);
       setMsg({ tipo: 'exito', texto: 'Reporte guardado exitosamente.' });
     } catch (err) {
-      setMsg({ tipo: 'error', texto: err.message });
+      setMsg({ tipo: 'error', texto: (err as Error).message });
     } finally {
       setLoading(false);
     }
   }, [getToken, empresaId, sedeId, nombreAsesor, telefonoAsesor, hallazgos, usoMateriales, materialesDetalle, motivoVisita, motivoVisitaOtro, firmaSvg, encuestaObservaciones, respuestasEncuesta]);
 
-  const descargarPDF = useCallback(async (reporteId) => {
+  const descargarPDF = useCallback(async (reporteId: number) => {
     setDescargando(true);
     try {
       const t = await getToken();

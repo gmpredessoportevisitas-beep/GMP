@@ -1,5 +1,10 @@
+import { ReactNode } from 'react';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 import useAdminEmpresas from '../hooks/useAdminEmpresas';
+
+function Th({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
+}
 
 export default function AdminEmpresas() {
   const {
@@ -134,7 +139,7 @@ export default function AdminEmpresas() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
                       <p className="font-medium">Sin empresas registradas</p>
-                      <p className="text-xs mt-1">Haz clic en "Nueva Empresa" para crear la primera.</p>
+                      <p className="text-xs mt-1">Haz clic en &quot;Nueva Empresa&quot; para crear la primera.</p>
                     </td>
                   </tr>
                 )}
@@ -145,8 +150,4 @@ export default function AdminEmpresas() {
       </div>
     </div>
   );
-}
-
-function Th({ children, className = '' }) {
-  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
 }

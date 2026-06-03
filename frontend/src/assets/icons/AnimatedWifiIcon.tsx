@@ -17,13 +17,11 @@ const AnimatedWifiIcon = () => {
           fill: black;
         }
 
-        /* Asignación de animaciones con duración de 1.5 segundos */
         .w1 { animation: wave1 1.5s infinite; }
         .w2 { animation: wave2 1.5s infinite; }
         .w3 { animation: wave3 1.5s infinite; }
         .w4 { animation: wave4 1.5s infinite; }
 
-        /* Keyframes para que parpadeen de menor a mayor y se apaguen juntas */
         @keyframes wave1 {
           0%, 100% { opacity: 0.1; }
           20%, 90% { opacity: 1; }
@@ -45,7 +43,6 @@ const AnimatedWifiIcon = () => {
         }
       `}</style>
 
-      {/* Cambiamos 'class' por 'className' */}
       <circle cx="50" cy="80" r="8" className="punto w1" />
       <path d="M 28,58 A 31,31 0 0,1 72,58" className="onda w2" />
       <path d="M 8,38 A 59,59 0 0,1 92,38" className="onda w3" />

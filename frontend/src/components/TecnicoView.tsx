@@ -4,6 +4,11 @@ import useTecnicoView from '../hooks/useTecnicoView';
 const CW = 400;
 const CH = 150;
 
+interface Point {
+  x: number;
+  y: number;
+}
+
 export default function TecnicoView() {
   const {
     empresas, sedes, loaded,
@@ -25,23 +30,23 @@ export default function TecnicoView() {
     guardarReporte, descargarPDF, resetForm, perfil, logout,
   } = useTecnicoView();
 
-  const canvasRef = useRef(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [drawing, setDrawing] = useState(false);
   const [tocado, setTocado] = useState(false);
-  const trazosRef = useRef([]);
-  const trazoRef = useRef([]);
+  const trazosRef = useRef<Point[][]>([]);
+  const trazoRef = useRef<Point[]>([]);
 
-  const getCoords = useCallback((e) => {
+  const getCoords = useCallback((e: React.MouseEvent | React.TouchEvent): Point => {
     const c = canvasRef.current;
     if (!c) return { x: 0, y: 0 };
     const r = c.getBoundingClientRect();
     return {
-      x: ((e.touches ? e.touches[0].clientX : e.clientX) - r.left) / r.width * CW,
-      y: ((e.touches ? e.touches[0].clientY : e.clientY) - r.top) / r.height * CH,
+      x: ((e as React.TouchEvent).touches ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX - r.left) / r.width * CW,
+      y: ((e as React.TouchEvent).touches ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY - r.top) / r.height * CH,
     };
   }, []);
 
-  const ptsToD = useCallback((pts) => {
+  const ptsToD = useCallback((pts: Point[]) => {
     if (!pts.length) return '';
     if (pts.length === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} l 0.1 0.1`;
     if (pts.length === 2) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
@@ -54,7 +59,7 @@ export default function TecnicoView() {
   }, []);
 
   const construirSvg = useCallback(() => {
-    const todos = [...trazosRef.current];
+    const todos: Point[][] = [...trazosRef.current];
     if (trazoRef.current.length) todos.push(trazoRef.current);
     if (!todos.length) return '';
     const paths = todos.map(p => ptsToD(p)).filter(Boolean).map(d =>
@@ -63,7 +68,7 @@ export default function TecnicoView() {
     return `<svg viewBox="0 0 ${CW} ${CH}" xmlns="http://www.w3.org/2000/svg">\n  <rect width="${CW}" height="${CH}" fill="#fff"/>\n  ${paths}\n</svg>`;
   }, [ptsToD]);
 
-  const startDraw = useCallback((e) => {
+  const startDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     const { x, y } = getCoords(e);
     const ctx = canvasRef.current?.getContext('2d');
@@ -74,7 +79,7 @@ export default function TecnicoView() {
     setDrawing(true); setTocado(true);
   }, [getCoords]);
 
-  const doDraw = useCallback((e) => {
+  const doDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     if (!drawing) return;
     const { x, y } = getCoords(e);
@@ -84,7 +89,7 @@ export default function TecnicoView() {
     trazoRef.current.push({ x, y });
   }, [drawing, getCoords]);
 
-  const stopDraw = useCallback((e) => {
+  const stopDraw = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     if (!drawing) return;
     setDrawing(false);
@@ -95,7 +100,7 @@ export default function TecnicoView() {
 
   function limpiarFirma() {
     const c = canvasRef.current;
-    if (c) c.getContext('2d').clearRect(0, 0, CW, CH);
+    if (c) c.getContext('2d')?.clearRect(0, 0, CW, CH);
     trazosRef.current = []; trazoRef.current = [];
     setFirmaSvg(''); setTocado(false);
   }
@@ -340,9 +345,9 @@ export default function TecnicoView() {
                   )}
                 </div>
 
-                <div className="w-full flex justify-center ">
+                <div className="w-full flex justify-center">
                   <button type="submit" disabled={loading || !empresaId || !sedeId}
-                    className={`py-4 px-4 rounded-xl  font-semibold text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-md ${
+                    className={`py-4 px-4 rounded-xl font-semibold text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-md ${
                       loading || !empresaId || !sedeId
                         ? 'bg-gray-300 cursor-not-allowed'
                         : 'bg-primary-600 hover:bg-primary-700 hover:shadow-lg'

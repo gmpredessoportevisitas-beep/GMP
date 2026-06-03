@@ -1,5 +1,10 @@
+import { ReactNode } from 'react';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 import useAdminSedes from '../hooks/useAdminSedes';
+
+function Th({ children, className = '' }: { children: ReactNode; className?: string }) {
+  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
+}
 
 export default function AdminSedes() {
   const {
@@ -130,7 +135,7 @@ export default function AdminSedes() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       </svg>
                       <p className="font-medium">Sin sedes registradas</p>
-                      <p className="text-xs mt-1">Haz clic en "Nueva Sede" para crear la primera.</p>
+                      <p className="text-xs mt-1">Haz clic en &quot;Nueva Sede&quot; para crear la primera.</p>
                     </td>
                   </tr>
                 )}
@@ -141,8 +146,4 @@ export default function AdminSedes() {
       </div>
     </div>
   );
-}
-
-function Th({ children, className = '' }) {
-  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
 }

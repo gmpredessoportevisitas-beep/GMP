@@ -1,22 +1,26 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import logoWebp from '../assets/logo.webp';
+import logo from '../assets/logo.webp';
 
-export default function Login({ errorInicial = '' }) {
+interface LoginProps {
+  errorInicial?: string;
+}
+
+export default function Login({ errorInicial = '' }: LoginProps) {
   const { login } = useAuth();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(errorInicial);
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(username, password);
     } catch (err) {
-      setError(err.message || 'Error al iniciar sesion');
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesion');
     } finally {
       setLoading(false);
     }
@@ -25,13 +29,9 @@ export default function Login({ errorInicial = '' }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-black p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full animate-fade-in border border-white/10">
-        <div className="mb-6 text-center">
-          <div className="w-full h-full py-4 rounded-2xl flex items-center justify-center mx-auto mb-5 bg-black">
-            <img src={logoWebp} alt="Logo" className="w-30 h-24" />
-          </div>  
-          <p className="text-gray-500 text-sm mt-1">Gestión de Servicios de Campo</p>
+        <div className='bg-black flex justify-center px-2 py-4 rounded-xl mb-8'>
+          <img src={logo} alt="Logo" className="w-32 mx-auto mb-4" />
         </div>
-
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-800 rounded-xl border border-red-200 text-sm flex items-start gap-3">
             <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,13 +43,13 @@ export default function Login({ errorInicial = '' }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-1">Usuario</label>
             <div className="relative">
               <svg className="w-5 h-5 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                required autoComplete="email" placeholder="usuario@gmp.com"
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
+                required autoComplete="username" placeholder="usuario"
                 className="w-full pl-11 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
           </div>

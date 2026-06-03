@@ -5,7 +5,14 @@ import AdminSedes from './AdminSedes';
 import AdminUsuarios from './AdminUsuarios';
 import AdminReportes from './AdminReportes';
 
-const TABS = [
+interface Tab {
+  id: string;
+  label: string;
+  icon: string;
+  desc: string;
+}
+
+const TABS: Tab[] = [
   { id: 'reportes', label: 'Reportes', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
     desc: 'Historial de reportes generados' },
   { id: 'empresas', label: 'Empresas', icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
@@ -34,7 +41,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-white">GMP Admin</h1>
-              <p className="text-xs text-primary-300">{perfil?.email}</p>
+              <p className="text-xs text-primary-300">@{perfil?.username}</p>
             </div>
           </div>
         </div>
@@ -84,7 +91,7 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="font-bold">GMP Admin</h1>
-              <p className="text-primary-300 text-xs">{perfil?.email}</p>
+              <p className="text-primary-300 text-xs">@{perfil?.username}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
