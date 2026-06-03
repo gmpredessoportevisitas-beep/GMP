@@ -15,6 +15,8 @@ export default function AdminReportes() {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [previewLoadingId, setPreviewLoadingId] = useState(null);
   const [msg, setMsg] = useState({ tipo: '', texto: '' });
+  const [encuestaData, setEncuestaData] = useState(null);
+  const [encuestaLoading, setEncuestaLoading] = useState(false);
   
   const cargar = useCallback(async (offset = 0) => {
     setLoading(true); setError('');
@@ -81,16 +83,45 @@ export default function AdminReportes() {
     if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
   }
 
+  async function verEncuesta(reporteId) {
+    setEncuestaLoading(true);
+    setMsg({ tipo: '', texto: '' });
+    try {
+      const t = await getToken();
+      const res = await fetch(`${API}/api/reportes/${reporteId}/encuesta`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (!res.ok) {
+        if (res.status === 404) { setMsg({ tipo: 'info', texto: 'Este reporte no tiene encuesta registrada.' }); }
+        else throw new Error('Error al consultar encuesta');
+      } else {
+        setEncuestaData(await res.json());
+      }
+    } catch (err) {
+      setMsg({ tipo: 'error', texto: err.message });
+    } finally {
+      setEncuestaLoading(false);
+    }
+  }
+
+  function cerrarEncuesta() { setEncuestaData(null); setMsg({ tipo: '', texto: '' }); }
+
 
   function exportarCSV() {
     if (!reportes.length) return;
-    const h = ['ID', 'Fecha', 'Empresa', 'Sede', 'Tecnico', 'Observaciones'];
+    const h = ['ID', 'Fecha', 'Empresa', 'Sede', 'Tecnico', 'Asesor', 'Telefono Asesor', 'Hallazgos', 'Uso Materiales', 'Materiales Detalle', 'Motivo Visita', 'Motivo Visita Otro'];
     const rows = reportes.map(r => [
       r.id, formatFecha(r.fecha_hora),
       csv(r.empresas?.nombre),
       csv(r.sedes?.nombre),
       csv(r.perfiles?.nombre_completo),
-      csv(r.observaciones),
+      csv(r.nombre_asesor),
+      csv(r.telefono_asesor),
+      csv(r.hallazgos),
+      r.uso_materiales ? 'Si' : 'No',
+      csv(r.materiales_detalle),
+      r.motivo_visita === 'otro' && r.motivo_visita_otro ? `Otro: ${r.motivo_visita_otro}` : csv(r.motivo_visita),
+      csv(r.motivo_visita_otro),
     ]);
     const blob = new Blob(['\uFEFF' + [h.join(','), ...rows.map(r => r.join(','))].join('\n')], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
@@ -134,6 +165,19 @@ export default function AdminReportes() {
         </div>
       )}
 
+      {msg.texto && (
+        <div className={`mb-5 p-4 rounded-xl text-sm font-medium flex items-center gap-3 border ${
+          msg.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' :
+          msg.tipo === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''
+        }`}>
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={msg.tipo === 'error' ? 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'} />
+          </svg>
+          {msg.texto}
+          <button onClick={() => setMsg({ tipo: '', texto: '' })} className="ml-auto text-gray-500 hover:text-gray-700 font-bold">X</button>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex flex-col items-center py-20">
           <AnimatedWifiIcon/>
@@ -158,8 +202,9 @@ export default function AdminReportes() {
                     <Th className="text-white/80">Empresa</Th>
                     <Th className="text-white/80">Sede</Th>
                     <Th className="text-white/80">Tecnico</Th>
-                    <Th className="text-white/80">Obs.</Th>
-                    <Th className="text-white/80 text-center">PDF</Th>
+                    <Th className="text-white/80">Asesor</Th>
+                    <Th className="text-white/80">Hallazgos</Th>
+                    <Th className="text-white/80 text-center">PDF/Enc.</Th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -170,7 +215,8 @@ export default function AdminReportes() {
                       <td className="px-5 py-4 text-sm font-medium text-gray-700">{r.empresas?.nombre || '—'}</td>
                       <td className="px-5 py-4 text-sm text-gray-500">{r.sedes?.nombre || '—'}</td>
                       <td className="px-5 py-4 text-sm text-gray-500">{r.perfiles?.nombre_completo || '—'}</td>
-                      <td className="px-5 py-4 text-sm text-gray-400 max-w-[140px] truncate">{r.observaciones || '—'}</td>
+                      <td className="px-5 py-4 text-sm text-gray-500">{r.nombre_asesor || '—'}</td>
+                      <td className="px-5 py-4 text-sm text-gray-400 max-w-[140px] truncate">{r.hallazgos || '—'}</td>
                       <td className="px-5 py-4 text-center flex items-center justify-center gap-2">
                         <button onClick={() => previsualizar(r.id)} 
                           className={`py-2.5 px-2 rounded-xl gap-2 shadow-sm transition-all hover:bg-orange-50`}>
@@ -228,6 +274,13 @@ export default function AdminReportes() {
                           )}
                           {descargando === r.id ? 'Descargando...' : 'PDF'}
                         </button>
+                        <button onClick={() => verEncuesta(r.id)}
+                          className="inline-flex items-center gap-1.5 py-3 px-2 rounded-xl text-xs font-bold transition-all bg-amber-500 text-white hover:bg-amber-600 shadow-sm">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                          </svg>
+                          Enc.
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -256,6 +309,55 @@ export default function AdminReportes() {
             </button>
           </div>
         </>
+      )}
+
+      {encuestaData && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={cerrarEncuesta}>
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-gray-800">Encuesta de Satisfaccion</h2>
+                  <p className="text-xs text-gray-400">Reporte #{encuestaData.encuesta.reporte_id}</p>
+                </div>
+              </div>
+              <button onClick={cerrarEncuesta} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+              {(encuestaData.respuestas || []).map((r, i) => (
+                <div key={i} className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-sm font-semibold text-gray-700 mb-2">{r.encuesta_preguntas?.texto || `Pregunta ${r.pregunta_id}`}</p>
+                  <div className="flex gap-1">
+                    {[1,2,3,4,5].map(v => (
+                      <svg key={v} className={`w-6 h-6 ${v <= r.valor ? 'text-yellow-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                    ))}
+                    <span className="ml-2 text-xs font-semibold text-gray-500 self-center">{r.valor}/5</span>
+                  </div>
+                </div>
+              ))}
+              {encuestaData.encuesta.observaciones && (
+                <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                  <p className="text-xs font-semibold text-amber-700 mb-1">Observaciones del cliente:</p>
+                  <p className="text-sm text-gray-700">{encuestaData.encuesta.observaciones}</p>
+                </div>
+              )}
+              <p className="text-xs text-gray-400 text-right">
+                {new Date(encuestaData.encuesta.creado_en).toLocaleString('es-CO')}
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

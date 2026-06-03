@@ -67,25 +67,31 @@ async def listar_usuarios(admin: dict = Depends(solo_admin)):
 
 @router.post("/usuarios", status_code=201)
 async def crear_usuario(data: UsuarioCreate, admin: dict = Depends(solo_admin)):
-    auth_resp = supabase.auth.admin.create_user({
-        "email": data.email,
-        "password": data.password,
-        "email_confirm": True,
-        "user_metadata": {"nombre_completo": data.nombre_completo, "rol": data.rol},
-    })
+    try:
+        auth_resp = supabase.auth.admin.create_user({
+            "email": data.email,
+            "password": data.password,
+            "email_confirm": True,
+            "user_metadata": {"nombre_completo": data.nombre_completo, "rol": data.rol},
+        })
+    except Exception as e:
+        raise HTTPException(500, f"Error al crear usuario en Auth: {str(e)}")
+
     if not auth_resp.user:
-        raise HTTPException(500, "Error al crear usuario en Auth.")
+        raise HTTPException(500, "Error al crear usuario en Auth: sin respuesta del servidor")
 
     user_id = auth_resp.user.id
-    perfil = {
-        "id": user_id,
-        "email": data.email,
-        "nombre_completo": data.nombre_completo,
-        "rol": data.rol,
-        "activo": True,
-        "creado_en": ahora_iso(),
-    }
-    supabase.table("perfiles").insert(perfil).execute()
+    try:
+        supabase.table("perfiles").upsert({
+            "id": user_id,
+            "email": data.email,
+            "nombre_completo": data.nombre_completo,
+            "rol": data.rol,
+            "activo": True,
+            "creado_en": ahora_iso(),
+        }).execute()
+    except Exception:
+        pass
 
     return {"id": user_id, "email": data.email, "rol": data.rol, "nombre_completo": data.nombre_completo}
 

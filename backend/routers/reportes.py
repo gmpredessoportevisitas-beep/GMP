@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api", tags=["reportes"])
 
 @router.post("/reportes", status_code=201)
 async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario_actual)):
-    row = data.model_dump()
+    row = data.model_dump(exclude={"encuesta_respuestas", "encuesta_observaciones"})
     row["tecnico_id"] = usuario["id"]
     row["fecha_hora"] = ahora_iso()
     row["creado_en"] = ahora_iso()
@@ -21,7 +21,26 @@ async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario
         raise HTTPException(400, "La sede no pertenece a la empresa seleccionada.")
 
     result = supabase.table("reportes").insert(row).execute()
-    return {"mensaje": "Reporte creado", "reporte": result.data[0]}
+    reporte = result.data[0]
+
+    if data.encuesta_respuestas:
+        encuesta = (supabase.table("encuestas_satisfaccion")
+                    .insert({
+                        "reporte_id": reporte["id"],
+                        "observaciones": data.encuesta_observaciones,
+                        "creado_en": ahora_iso(),
+                    })
+                    .execute())
+        encuesta_id = encuesta.data[0]["id"]
+
+        respuestas = [
+            {"encuesta_id": encuesta_id, "pregunta_id": r.pregunta_id, "valor": r.valor, "creado_en": ahora_iso()}
+            for r in data.encuesta_respuestas
+        ]
+        if respuestas:
+            supabase.table("encuesta_respuestas").insert(respuestas).execute()
+
+    return {"mensaje": "Reporte creado", "reporte": reporte}
 
 
 @router.get("/reportes")

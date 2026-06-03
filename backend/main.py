@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, admin, catalogos, reportes
+from routers import auth, admin, catalogos, reportes, encuestas
 
 app = FastAPI(
     title="GMP v2 - Gestion de Mantenimiento Preventivo",
@@ -28,6 +28,7 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(catalogos.router)
 app.include_router(reportes.router)
+app.include_router(encuestas.router)
 
 if __name__ == "__main__":
     import uvicorn

@@ -141,14 +141,33 @@ class ReportePDF(FPDF):
     def tabla_info(self):
         self.seccion_titulo("Informacion General")
         cols = (35, 60, 35, 60)
+        motivo = self.reporte.get("motivo_visita", "").capitalize() or "-"
+        if self.reporte.get("motivo_visita") == "otro" and self.reporte.get("motivo_visita_otro", "").strip():
+            motivo = f"Otro: {self.reporte.get('motivo_visita_otro')}"
+        materiales = "Si" if self.reporte.get("uso_materiales") else "No"
         datos = [
             ("ID Reporte", str(self.reporte.get("id", "-")), "Fecha y Hora", format_fecha(self.reporte.get("fecha_hora", ""))),
             ("Empresa", self.empresa, "Sede / Punto", self.sede),
             ("Tecnico", self.tecnico, "Email Tecnico", self.email_tec),
+            ("Asesor", self.reporte.get("nombre_asesor", "-"), "Tel. Asesor", self.reporte.get("telefono_asesor", "-")),
+            ("Motivo Visita", motivo, "Uso Materiales", materiales),
         ]
         for fila in datos:
             self._fila_tabla(fila, cols)
         self.ln(5)
+
+    def seccion_materiales(self):
+        if self.reporte.get("uso_materiales") and self.reporte.get("materiales_detalle", "").strip():
+            self.seccion_titulo("Materiales Utilizados")
+            detalle = self.reporte.get("materiales_detalle", "").strip()
+            self.set_font("Helvetica", "", 9)
+            self.set_text_color(*self.COLOR_TEXTO)
+            self.set_fill_color(252, 248, 245)
+            self.set_draw_color(*self.COLOR_BORDE)
+            self.set_line_width(0.3)
+            ancho = self.w - self.l_margin - self.r_margin
+            self.multi_cell(ancho, 5, detalle, border=1, fill=True, align="L")
+            self.ln(6)
 
     def _fila_tabla(self, celdas: tuple, anchos: tuple):
         h = 8
@@ -166,9 +185,9 @@ class ReportePDF(FPDF):
             self.cell(anchos[i * 2 + 1], h, f"  {val}", border=1, fill=True, new_x="RIGHT", new_y="LAST")
         self.ln()
 
-    def seccion_observaciones(self):
-        self.seccion_titulo("Observaciones / Hallazgos")
-        obs = self.reporte.get("observaciones", "").strip() or "Sin observaciones registradas."
+    def seccion_hallazgos(self):
+        self.seccion_titulo("Hallazgos")
+        obs = self.reporte.get("hallazgos", "").strip() or "Sin hallazgos registrados."
         self.set_font("Helvetica", "", 9)
         self.set_text_color(*self.COLOR_TEXTO)
         self.set_fill_color(252, 248, 245)
@@ -213,7 +232,8 @@ def generar_pdf_fpdf(reporte: dict, empresa: str, sede: str, tecnico: str, email
     pdf.alias_nb_pages()
     pdf.add_page()
     pdf.tabla_info()
-    pdf.seccion_observaciones()
+    pdf.seccion_materiales()
+    pdf.seccion_hallazgos()
     pdf.seccion_firma()
     buf = io.BytesIO()
     pdf.output(buf)

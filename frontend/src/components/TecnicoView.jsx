@@ -14,8 +14,18 @@ export default function TecnicoView() {
 
   const [empresaId, setEmpresaId] = useState('');
   const [sedeId, setSedeId] = useState('');
-  const [observaciones, setObservaciones] = useState('');
+  const [nombreAsesor, setNombreAsesor] = useState('');
+  const [telefonoAsesor, setTelefonoAsesor] = useState('');
+  const [hallazgos, setHallazgos] = useState('');
+  const [usoMateriales, setUsoMateriales] = useState(false);
+  const [materialesDetalle, setMaterialesDetalle] = useState('');
+  const [motivoVisita, setMotivoVisita] = useState('soporte');
+  const [motivoVisitaOtro, setMotivoVisitaOtro] = useState('');
   const [firmaSvg, setFirmaSvg] = useState('');
+
+  const [preguntas, setPreguntas] = useState([]);
+  const [respuestasEncuesta, setRespuestasEncuesta] = useState({});
+  const [encuestaObservaciones, setEncuestaObservaciones] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [descargando, setDescargando] = useState(false);
@@ -34,12 +44,20 @@ export default function TecnicoView() {
   useEffect(() => {
     (async () => {
       const t = await getToken();
-      const [rE, rS] = await Promise.all([
+      const [rE, rS, rP] = await Promise.all([
         fetch(`${API}/api/catalogos/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
         fetch(`${API}/api/catalogos/sedes`, { headers: { Authorization: `Bearer ${t}` } }),
+        fetch(`${API}/api/encuesta-preguntas`),
       ]);
       if (rE.ok) setEmpresas(await rE.json());
       if (rS.ok) setSedes(await rS.json());
+      if (rP.ok) {
+        const data = await rP.json();
+        setPreguntas(data);
+        const inicial = {};
+        data.forEach(p => { inicial[p.id] = 0; });
+        setRespuestasEncuesta(inicial);
+      }
       setLoaded(true);
     })();
   }, []);
@@ -134,15 +152,24 @@ export default function TecnicoView() {
         body: JSON.stringify({
           empresa_id: parseInt(empresaId),
           sede_id: parseInt(sedeId),
-          observaciones,
+          nombre_asesor: nombreAsesor,
+          telefono_asesor: telefonoAsesor,
+          hallazgos,
+          uso_materiales: usoMateriales,
+          materiales_detalle: materialesDetalle,
+          motivo_visita: motivoVisita,
+          motivo_visita_otro: motivoVisitaOtro,
           firma_vector: firmaSvg,
+          encuesta_observaciones: encuestaObservaciones,
+          encuesta_respuestas: Object.entries(respuestasEncuesta)
+            .filter(([_, v]) => v > 0)
+            .map(([pid, val]) => ({ pregunta_id: parseInt(pid), valor: val })),
         }),
       });
       if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || 'Error del servidor'); }
       const data = await res.json();
       setGuardado(data.reporte);
       setMsg({ tipo: 'exito', texto: 'Reporte guardado exitosamente.' });
-      cerrarPreview();
     } catch (err) {
       setMsg({ tipo: 'error', texto: err.message });
     } finally {
@@ -223,7 +250,7 @@ export default function TecnicoView() {
                 </svg>
                 Descargar PDF
               </button>
-              <button onClick={() => { setGuardado(null); setEmpresaId(''); setSedeId(''); setObservaciones(''); setFirmaSvg(''); setMsg({ tipo: '', texto: '' }); limpiarFirma(); }}
+              <button onClick={() => { setGuardado(null); setEmpresaId(''); setSedeId(''); setNombreAsesor(''); setTelefonoAsesor(''); setHallazgos(''); setUsoMateriales(false); setMaterialesDetalle(''); setMotivoVisita('soporte'); setMotivoVisitaOtro(''); setFirmaSvg(''); setEncuestaObservaciones(''); setRespuestasEncuesta(Object.fromEntries(preguntas.map(p => [p.id, 0]))); setMsg({ tipo: '', texto: '' }); limpiarFirma(); }}
                 className="w-full py-3.5 px-4 bg-white text-primary-600 border-2 border-primary-600 rounded-xl font-semibold hover:bg-orange-50 transition-all active:scale-[0.97]">
                 Nuevo Reporte
               </button>
@@ -287,21 +314,115 @@ export default function TecnicoView() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 outline-none" />
                 </div>
 
-                {/* Observaciones */}
+                {/* Asesor */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Asesor
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="text" value={nombreAsesor} onChange={e => setNombreAsesor(e.target.value)}
+                      placeholder="Nombre del asesor" maxLength={255}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white transition-shadow" />
+                    <input type="text" value={telefonoAsesor} onChange={e => setTelefonoAsesor(e.target.value)}
+                      placeholder="Telefono del asesor" maxLength={50}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white transition-shadow" />
+                  </div>
+                </div>
+
+                {/* Motivo Visita */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                    Motivo de Visita <span className="text-red-500">*</span>
+                  </label>
+                  <select value={motivoVisita} onChange={e => { setMotivoVisita(e.target.value); if (e.target.value !== 'otro') setMotivoVisitaOtro(''); }}
+                    required className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-white transition-shadow">
+                    <option value="soporte">Soporte</option>
+                    <option value="instalacion">Instalacion</option>
+                    <option value="reubicacion">Reubicacion</option>
+                    <option value="desinstalacion">Desinstalacion</option>
+                    <option value="otro">Otro</option>
+                  </select>
+                  {motivoVisita === 'otro' && (
+                    <input type="text" value={motivoVisitaOtro} onChange={e => setMotivoVisitaOtro(e.target.value)}
+                      placeholder="Especifica el motivo de la visita" maxLength={255}
+                      className="mt-3 w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white transition-shadow" />
+                  )}
+                </div>
+
+                {/* Uso Materiales */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                  <label className="flex items-center gap-3 text-sm font-semibold text-gray-700 cursor-pointer">
+                    <input type="checkbox" checked={usoMateriales} onChange={e => { setUsoMateriales(e.target.checked); if (!e.target.checked) setMaterialesDetalle(''); }}
+                      className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer" />
+                    <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                    Se utilizaron materiales / repuestos
+                  </label>
+                  {usoMateriales && (
+                    <textarea value={materialesDetalle} onChange={e => setMaterialesDetalle(e.target.value)}
+                      rows={3} maxLength={2000} placeholder="Describe los materiales o repuestos utilizados..."
+                      className="mt-3 w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white resize-none transition-shadow" />
+                  )}
+                </div>
+
+                {/* Hallazgos */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
-                    Observaciones / Hallazgos
+                    Hallazgos
                   </label>
-                  <textarea value={observaciones} onChange={e => setObservaciones(e.target.value)}
-                    rows={4} maxLength={5000} placeholder="Describe los trabajos realizados, hallazgos y recomendaciones..."
+                  <textarea value={hallazgos} onChange={e => setHallazgos(e.target.value)}
+                    rows={4} maxLength={5000} placeholder="Describe los hallazgos encontrados durante la visita..."
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white resize-none transition-shadow" />
                   <div className="flex justify-between mt-1">
-                    {observaciones.length > 0 && <p className="text-xs text-gray-400">{observaciones.length}/5000 caracteres</p>}
-                    {!observaciones && <span />}
+                    {hallazgos.length > 0 && <p className="text-xs text-gray-400">{hallazgos.length}/5000 caracteres</p>}
+                    {!hallazgos && <span />}
                   </div>
+                </div>
+
+                {/* Encuesta de Satisfaccion */}
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                    <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                    Encuesta de Satisfaccion
+                    <span className="text-xs font-normal text-gray-400 ml-1">(Opcional)</span>
+                  </div>
+                  {preguntas.map((p, idx) => (
+                    <div key={p.id} className="mb-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0 last:mb-0">
+                      <p className="text-xs font-medium text-gray-600 mb-1.5">{idx + 1}. {p.texto}</p>
+                      <div className="flex gap-0.5">
+                        {[1,2,3,4,5].map(v => (
+                          <button key={v} type="button" onClick={() => setRespuestasEncuesta(prev => ({ ...prev, [p.id]: prev[p.id] === v ? 0 : v }))}
+                            className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
+                              respuestasEncuesta[p.id] >= v ? 'text-amber-400 scale-110' : 'text-gray-200 hover:text-amber-300'
+                            }`}>
+                            <svg fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
+                              <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                            </svg>
+                          </button>
+                        ))}
+                        {respuestasEncuesta[p.id] > 0 && (
+                          <span className="ml-2 text-[10px] text-gray-400 self-center font-medium">
+                            {['Muy malo','Malo','Regular','Bueno','Excelente'][respuestasEncuesta[p.id] - 1]}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <textarea value={encuestaObservaciones} onChange={e => setEncuestaObservaciones(e.target.value)}
+                    rows={2} maxLength={2000} placeholder="Observaciones adicionales de la encuesta (opcional)..."
+                    className="mt-2 w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white resize-none transition-shadow text-sm" />
                 </div>
 
                 {/* Firma */}
