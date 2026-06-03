@@ -1,73 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
-
-const API = import.meta.env.VITE_API_URL ?? '';
+import useAdminEmpresas from '../hooks/useAdminEmpresas';
 
 export default function AdminEmpresas() {
-  const { getToken } = useAuth();
-  const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ nombre: '', nit: '', direccion: '', telefono: '', email: '' });
-  const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [cargando, setCargando] = useState(true);
-  const [msg, setMsg] = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  async function cargar() {
-    setCargando(true);
-    try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } });
-      if (res.ok) setItems(await res.json());
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  useEffect(() => { cargar(); }, []);
-
-  function resetForm() {
-    setForm({ nombre: '', nit: '', direccion: '', telefono: '', email: '' });
-    setEditId(null);
-    setShowForm(false);
-  }
-
-  async function guardar(e) {
-    e.preventDefault();
-    setSaving(true);
-    setMsg('');
-    const t = await getToken();
-    const url = editId ? `${API}/api/admin/empresas/${editId}` : `${API}/api/admin/empresas`;
-    const method = editId ? 'PUT' : 'POST';
-    const res = await fetch(url, {
-      method,
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-      body: JSON.stringify(form),
-    });
-    if (res.ok) {
-      setMsg(editId ? 'Empresa actualizada.' : 'Empresa creada.');
-      resetForm();
-      cargar();
-    } else {
-      const err = await res.json().catch(() => ({}));
-      setMsg(err.detail || 'Error al guardar.');
-    }
-    setSaving(false);
-  }
-
-  function editar(item) {
-    setEditId(item.id);
-    setForm({ nombre: item.nombre, nit: item.nit || '', direccion: item.direccion || '', telefono: item.telefono || '', email: item.email || '' });
-    setShowForm(true);
-  }
-
-  async function eliminar(id, nombre) {
-    if (!confirm(`Eliminar "${nombre}"? Esta accion no se puede deshacer.`)) return;
-    const t = await getToken();
-    await fetch(`${API}/api/admin/empresas/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
-    cargar();
-  }
+  const {
+    items, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    resetForm, guardar, editar, eliminar,
+  } = useAdminEmpresas();
 
   return (
     <div className="animate-fade-in max-w-5xl mx-auto">

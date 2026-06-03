@@ -1,134 +1,15 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon'
-
-const API = import.meta.env.VITE_API_URL ?? '';
-const LIMIT = 20;
+import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
+import useAdminReportes from '../hooks/useAdminReportes';
 
 export default function AdminReportes() {
-  const { getToken } = useAuth();
-  const [reportes, setReportes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [pagina, setPagina] = useState(0);
-  const [descargando, setDescargando] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState(null);
-  const [previewLoadingId, setPreviewLoadingId] = useState(null);
-  const [msg, setMsg] = useState({ tipo: '', texto: '' });
-  const [encuestaData, setEncuestaData] = useState(null);
-  const [encuestaLoading, setEncuestaLoading] = useState(false);
-  
-  const cargar = useCallback(async (offset = 0) => {
-    setLoading(true); setError('');
-    try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes?limit=${LIMIT}&offset=${offset}`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (!res.ok) throw new Error(`Error ${res.status}`);
-      setReportes(await res.json());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [getToken]);
-
-  useEffect(() => { cargar(pagina * LIMIT); }, [pagina, cargar]);
-
-  async function descargarPDF(id) {
-    setDescargando(id);
-    try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes/${id}/pdf`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (!res.ok) throw new Error('Error al generar PDF');
-      const blob = await res.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `reporte_${id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      alert('Error al descargar PDF: ' + err.message);
-    } finally {
-      setDescargando(null);
-    }
-  }
-
-    async function previsualizar(id) {
-  setPreviewLoadingId(id);
-  setMsg({ tipo: '', texto: '' });
-  try {
-    const t = await getToken();
-    const res = await fetch(`${API}/api/reportes/${id}/preview-pdf`, {
-      headers: { Authorization: `Bearer ${t}` },
-    });
-    if (!res.ok) throw new Error('Error al generar previsualización');
-    const blob = await res.blob();
-    const url = window.URL.createObjectURL(blob);
-    setPreviewUrl(url);
-  } catch (err) {
-    setMsg({ tipo: 'error', texto: err.message });
-  } finally {
-    setPreviewLoadingId(null);
-  }
-}
-
-  function cerrarPreview() {
-    if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
-  }
-
-  async function verEncuesta(reporteId) {
-    setEncuestaLoading(true);
-    setMsg({ tipo: '', texto: '' });
-    try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes/${reporteId}/encuesta`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
-      if (!res.ok) {
-        if (res.status === 404) { setMsg({ tipo: 'info', texto: 'Este reporte no tiene encuesta registrada.' }); }
-        else throw new Error('Error al consultar encuesta');
-      } else {
-        setEncuestaData(await res.json());
-      }
-    } catch (err) {
-      setMsg({ tipo: 'error', texto: err.message });
-    } finally {
-      setEncuestaLoading(false);
-    }
-  }
-
-  function cerrarEncuesta() { setEncuestaData(null); setMsg({ tipo: '', texto: '' }); }
-
-
-  function exportarCSV() {
-    if (!reportes.length) return;
-    const h = ['ID', 'Fecha', 'Empresa', 'Sede', 'Tecnico', 'Asesor', 'Telefono Asesor', 'Hallazgos', 'Uso Materiales', 'Materiales Detalle', 'Motivo Visita', 'Motivo Visita Otro'];
-    const rows = reportes.map(r => [
-      r.id, formatFecha(r.fecha_hora),
-      csv(r.empresas?.nombre),
-      csv(r.sedes?.nombre),
-      csv(r.perfiles?.nombre_completo),
-      csv(r.nombre_asesor),
-      csv(r.telefono_asesor),
-      csv(r.hallazgos),
-      r.uso_materiales ? 'Si' : 'No',
-      csv(r.materiales_detalle),
-      r.motivo_visita === 'otro' && r.motivo_visita_otro ? `Otro: ${r.motivo_visita_otro}` : csv(r.motivo_visita),
-      csv(r.motivo_visita_otro),
-    ]);
-    const blob = new Blob(['\uFEFF' + [h.join(','), ...rows.map(r => r.join(','))].join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = window.URL.createObjectURL(blob);
-    a.download = `reportes_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-  }
+  const {
+    reportes, loading, error, pagina, setPagina,
+    descargando, previewUrl, previewLoadingId,
+    msg, encuestaData, encuestaLoading,
+    cargar, descargarPDF, previsualizar, cerrarPreview,
+    verEncuesta, cerrarEncuesta, exportarCSV, setMsg,
+    LIMIT,
+  } = useAdminReportes();
 
   function formatFecha(iso) {
     if (!iso) return '';
@@ -137,7 +18,6 @@ export default function AdminReportes() {
   }
 
   function csv(t) { return `"${String(t||'').replace(/"/g,'""')}"`; }
-  
 
   return (
     <div className="animate-fade-in max-w-6xl mx-auto">
@@ -232,7 +112,6 @@ export default function AdminReportes() {
                         {previewUrl && (
                           <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in" onClick={cerrarPreview}>
                             <div className="bg-white rounded-2xl w-full max-w-4xl h-[94vh] md:h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                              {/* Cabecera del modal */}
                               <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -251,8 +130,6 @@ export default function AdminReportes() {
                                   </svg>
                                 </button>
                               </div>
-
-                              {/* Visor PDF */}
                               <div className="flex-1 bg-gray-200 min-h-0">
                                 <iframe src={previewUrl} className="w-full h-full" title="Previsualizacion del PDF" />
                               </div>

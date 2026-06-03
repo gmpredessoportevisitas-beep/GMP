@@ -1,76 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
-
-const API = import.meta.env.VITE_API_URL ?? '';
+import useAdminSedes from '../hooks/useAdminSedes';
 
 export default function AdminSedes() {
-  const { getToken } = useAuth();
-  const [items, setItems] = useState([]);
-  const [empresas, setEmpresas] = useState([]);
-  const [form, setForm] = useState({ empresa_id: '', nombre: '', direccion: '', ciudad: '' });
-  const [editId, setEditId] = useState(null);
-  const [saving, setSaving] = useState(false);
-  const [cargando, setCargando] = useState(true);
-  const [msg, setMsg] = useState('');
-  const [showForm, setShowForm] = useState(false);
-
-  async function cargar() {
-    setCargando(true);
-    try {
-      const t = await getToken();
-      const [rSedes, rEmp] = await Promise.all([
-        fetch(`${API}/api/admin/sedes`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
-      ]);
-      if (rSedes.ok) setItems(await rSedes.json());
-      if (rEmp.ok) setEmpresas(await rEmp.json());
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  useEffect(() => { cargar(); }, []);
-
-  function resetForm() {
-    setForm({ empresa_id: '', nombre: '', direccion: '', ciudad: '' });
-    setEditId(null);
-    setShowForm(false);
-  }
-
-  async function guardar(e) {
-    e.preventDefault();
-    setSaving(true); setMsg('');
-    const t = await getToken();
-    const body = { ...form, empresa_id: parseInt(form.empresa_id) };
-    const url = editId ? `${API}/api/admin/sedes/${editId}` : `${API}/api/admin/sedes`;
-    const method = editId ? 'PUT' : 'POST';
-    const res = await fetch(url, {
-      method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) { setMsg(editId ? 'Sede actualizada.' : 'Sede creada.'); resetForm(); cargar(); }
-    else { const err = await res.json().catch(()=>({})); setMsg(err.detail || 'Error.'); }
-    setSaving(false);
-  }
-
-  function editar(item) {
-    setEditId(item.id);
-    setForm({ empresa_id: String(item.empresa_id), nombre: item.nombre, direccion: item.direccion || '', ciudad: item.ciudad || '' });
-    setShowForm(true);
-  }
-
-  async function eliminar(id, nombre) {
-    if (!confirm(`Eliminar "${nombre}"? Esta accion no se puede deshacer.`)) return;
-    const t = await getToken();
-    await fetch(`${API}/api/admin/sedes/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
-    cargar();
-  }
-
-  function empresaNombre(id) {
-    const e = empresas.find(x => x.id === id);
-    return e ? e.nombre : '—';
-  }
+  const {
+    items, empresas, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    resetForm, guardar, editar, eliminar, empresaNombre,
+  } = useAdminSedes();
 
   return (
     <div className="animate-fade-in max-w-5xl mx-auto">

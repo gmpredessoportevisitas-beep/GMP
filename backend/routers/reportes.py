@@ -11,6 +11,7 @@ router = APIRouter(prefix="/api", tags=["reportes"])
 
 @router.post("/reportes", status_code=201)
 async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario_actual)):
+    print("Entré1")
     row = data.model_dump(exclude={"encuesta_respuestas", "encuesta_observaciones"})
     row["tecnico_id"] = usuario["id"]
     row["fecha_hora"] = ahora_iso()

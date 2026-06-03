@@ -1,36 +1,29 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useState, useRef, useCallback } from 'react';
+import useTecnicoView from '../hooks/useTecnicoView';
 
-const API = import.meta.env.VITE_API_URL ?? '';
 const CW = 400;
 const CH = 150;
 
 export default function TecnicoView() {
-  const { getToken, perfil, logout } = useAuth();
-
-  const [empresas, setEmpresas] = useState([]);
-  const [sedes, setSedes] = useState([]);
-  const [loaded, setLoaded] = useState(false);
-
-  const [empresaId, setEmpresaId] = useState('');
-  const [sedeId, setSedeId] = useState('');
-  const [nombreAsesor, setNombreAsesor] = useState('');
-  const [telefonoAsesor, setTelefonoAsesor] = useState('');
-  const [hallazgos, setHallazgos] = useState('');
-  const [usoMateriales, setUsoMateriales] = useState(false);
-  const [materialesDetalle, setMaterialesDetalle] = useState('');
-  const [motivoVisita, setMotivoVisita] = useState('soporte');
-  const [motivoVisitaOtro, setMotivoVisitaOtro] = useState('');
-  const [firmaSvg, setFirmaSvg] = useState('');
-
-  const [preguntas, setPreguntas] = useState([]);
-  const [respuestasEncuesta, setRespuestasEncuesta] = useState({});
-  const [encuestaObservaciones, setEncuestaObservaciones] = useState('');
-
-  const [loading, setLoading] = useState(false);
-  const [descargando, setDescargando] = useState(false);
-  const [guardado, setGuardado] = useState(null);
-  const [msg, setMsg] = useState({ tipo: '', texto: '' });
+  const {
+    empresas, sedes, loaded,
+    empresaId, setEmpresaId,
+    sedeId, setSedeId,
+    nombreAsesor, setNombreAsesor,
+    telefonoAsesor, setTelefonoAsesor,
+    hallazgos, setHallazgos,
+    usoMateriales, setUsoMateriales,
+    materialesDetalle, setMaterialesDetalle,
+    motivoVisita, setMotivoVisita,
+    motivoVisitaOtro, setMotivoVisitaOtro,
+    firmaSvg, setFirmaSvg,
+    preguntas, respuestasEncuesta, setRespuestasEncuesta,
+    encuestaObservaciones, setEncuestaObservaciones,
+    loading, descargando, guardado, setGuardado,
+    msg, setMsg,
+    sedesFiltradas, empresaNombre, sedeNombre,
+    guardarReporte, descargarPDF, resetForm, perfil, logout,
+  } = useTecnicoView();
 
   const canvasRef = useRef(null);
   const [drawing, setDrawing] = useState(false);
@@ -38,37 +31,6 @@ export default function TecnicoView() {
   const trazosRef = useRef([]);
   const trazoRef = useRef([]);
 
-  /* ------------------------------------------------------------------ */
-  /* Catalogos                                                           */
-  /* ------------------------------------------------------------------ */
-  useEffect(() => {
-    (async () => {
-      const t = await getToken();
-      const [rE, rS, rP] = await Promise.all([
-        fetch(`${API}/api/catalogos/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`${API}/api/catalogos/sedes`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`${API}/api/encuesta-preguntas`),
-      ]);
-      if (rE.ok) setEmpresas(await rE.json());
-      if (rS.ok) setSedes(await rS.json());
-      if (rP.ok) {
-        const data = await rP.json();
-        setPreguntas(data);
-        const inicial = {};
-        data.forEach(p => { inicial[p.id] = 0; });
-        setRespuestasEncuesta(inicial);
-      }
-      setLoaded(true);
-    })();
-  }, []);
-
-  const sedesFiltradas = empresaId
-    ? sedes.filter(s => s.empresa_id === parseInt(empresaId))
-    : [];
-
-  /* ------------------------------------------------------------------ */
-  /* Canvas vectorial                                                     */
-  /* ------------------------------------------------------------------ */
   const getCoords = useCallback((e) => {
     const c = canvasRef.current;
     if (!c) return { x: 0, y: 0 };
@@ -129,7 +91,7 @@ export default function TecnicoView() {
     if (trazoRef.current.length) trazosRef.current.push([...trazoRef.current]);
     trazoRef.current = [];
     setFirmaSvg(construirSvg());
-  }, [drawing, construirSvg]);
+  }, [drawing, construirSvg, setFirmaSvg]);
 
   function limpiarFirma() {
     const c = canvasRef.current;
@@ -138,54 +100,8 @@ export default function TecnicoView() {
     setFirmaSvg(''); setTocado(false);
   }
 
-  /* ------------------------------------------------------------------ */
-  /* Guardar reporte                                                      */
-  /* ------------------------------------------------------------------ */
-  async function guardarReporte() {
-    setLoading(true);
-    setMsg({ tipo: '', texto: '' });
-    try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
-        body: JSON.stringify({
-          empresa_id: parseInt(empresaId),
-          sede_id: parseInt(sedeId),
-          nombre_asesor: nombreAsesor,
-          telefono_asesor: telefonoAsesor,
-          hallazgos,
-          uso_materiales: usoMateriales,
-          materiales_detalle: materialesDetalle,
-          motivo_visita: motivoVisita,
-          motivo_visita_otro: motivoVisitaOtro,
-          firma_vector: firmaSvg,
-          encuesta_observaciones: encuestaObservaciones,
-          encuesta_respuestas: Object.entries(respuestasEncuesta)
-            .filter(([_, v]) => v > 0)
-            .map(([pid, val]) => ({ pregunta_id: parseInt(pid), valor: val })),
-        }),
-      });
-      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.detail || 'Error del servidor'); }
-      const data = await res.json();
-      setGuardado(data.reporte);
-      setMsg({ tipo: 'exito', texto: 'Reporte guardado exitosamente.' });
-    } catch (err) {
-      setMsg({ tipo: 'error', texto: err.message });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const empresaNombre = empresas.find(e => e.id === parseInt(empresaId))?.nombre || '';
-  const sedeNombre = sedes.find(s => s.id === parseInt(sedeId))?.nombre || '';
-
-  /* ------------------------------------------------------------------ */
-  /* Render                                                              */
-  /* ------------------------------------------------------------------ */
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header naranja */}
       <header className="bg-gradient-to-r from-primary-700 to-primary-500 text-white shadow-lg sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -206,7 +122,6 @@ export default function TecnicoView() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4 pb-24 animate-fade-in">
-        {/* Alerta */}
         {msg.texto && (
           <div className={`mb-5 p-4 rounded-xl text-sm font-medium flex items-start gap-3 animate-fade-in border ${
             msg.tipo === 'exito'
@@ -219,7 +134,6 @@ export default function TecnicoView() {
         )}
 
         {guardado ? (
-          /* Vista post-guardado */
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center animate-fade-in border border-gray-100">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
               <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,37 +144,22 @@ export default function TecnicoView() {
             <p className="text-gray-500 text-sm mb-2">{empresaNombre}</p>
             <p className="text-gray-400 text-xs mb-6">{sedeNombre}</p>
             <div className="space-y-3 max-w-xs mx-auto">
-              <button onClick={async () => {
-                setDescargando(true);
-                try {
-                  const t = await getToken();
-                  const res = await fetch(`${API}/api/reportes/${guardado.id}/pdf`, { headers: { Authorization: `Bearer ${t}` } });
-                  if (!res.ok) throw new Error();
-                  const blob = await res.blob();
-                  const url = window.URL.createObjectURL(blob);
-                  const a = document.createElement('a');
-                  a.href = url; a.download = `reporte_${guardado.id}.pdf`;
-                  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                  window.URL.revokeObjectURL(url);
-                } catch { setMsg({ tipo: 'error', texto: 'Error al descargar PDF.' }); }
-                finally { setDescargando(false); }
-              }} className="w-full py-3.5 px-4 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all active:scale-[0.97] shadow-md flex items-center justify-center gap-2">
+              <button onClick={() => descargarPDF(guardado.id)} disabled={descargando}
+                className="w-full py-3.5 px-4 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all active:scale-[0.97] shadow-md flex items-center justify-center gap-2">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Descargar PDF
               </button>
-              <button onClick={() => { setGuardado(null); setEmpresaId(''); setSedeId(''); setNombreAsesor(''); setTelefonoAsesor(''); setHallazgos(''); setUsoMateriales(false); setMaterialesDetalle(''); setMotivoVisita('soporte'); setMotivoVisitaOtro(''); setFirmaSvg(''); setEncuestaObservaciones(''); setRespuestasEncuesta(Object.fromEntries(preguntas.map(p => [p.id, 0]))); setMsg({ tipo: '', texto: '' }); limpiarFirma(); }}
+              <button onClick={() => { setGuardado(null); resetForm(); limpiarFirma(); }}
                 className="w-full py-3.5 px-4 bg-white text-primary-600 border-2 border-primary-600 rounded-xl font-semibold hover:bg-orange-50 transition-all active:scale-[0.97]">
                 Nuevo Reporte
               </button>
             </div>
           </div>
         ) : (
-          /* Formulario */
           <form onSubmit={(e) => { e.preventDefault(); guardarReporte(); }} className="space-y-4" noValidate>
             {!loaded ? (
-              /* Skeleton loading */
               <div className="space-y-4 animate-pulse">
                 {[1,2,3,4].map(i => (
                   <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -271,7 +170,6 @@ export default function TecnicoView() {
               </div>
             ) : (
               <>
-                {/* Empresa */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,7 +184,6 @@ export default function TecnicoView() {
                   </select>
                 </div>
 
-                {/* Sede */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -302,7 +199,6 @@ export default function TecnicoView() {
                   </select>
                 </div>
 
-                {/* Tecnico */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -314,7 +210,6 @@ export default function TecnicoView() {
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 outline-none" />
                 </div>
 
-                {/* Asesor */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,7 +227,6 @@ export default function TecnicoView() {
                   </div>
                 </div>
 
-                {/* Motivo Visita */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,9 +237,9 @@ export default function TecnicoView() {
                   <select value={motivoVisita} onChange={e => { setMotivoVisita(e.target.value); if (e.target.value !== 'otro') setMotivoVisitaOtro(''); }}
                     required className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-white transition-shadow">
                     <option value="soporte">Soporte</option>
-                    <option value="instalacion">Instalacion</option>
-                    <option value="reubicacion">Reubicacion</option>
-                    <option value="desinstalacion">Desinstalacion</option>
+                    <option value="instalación">Instalación</option>
+                    <option value="reubicación">Reubicación</option>
+                    <option value="desinstalación">Desinstalación</option>
                     <option value="otro">Otro</option>
                   </select>
                   {motivoVisita === 'otro' && (
@@ -355,7 +249,6 @@ export default function TecnicoView() {
                   )}
                 </div>
 
-                {/* Uso Materiales */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-3 text-sm font-semibold text-gray-700 cursor-pointer">
                     <input type="checkbox" checked={usoMateriales} onChange={e => { setUsoMateriales(e.target.checked); if (!e.target.checked) setMaterialesDetalle(''); }}
@@ -372,7 +265,6 @@ export default function TecnicoView() {
                   )}
                 </div>
 
-                {/* Hallazgos */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -389,7 +281,6 @@ export default function TecnicoView() {
                   </div>
                 </div>
 
-                {/* Encuesta de Satisfaccion */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
                     <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -425,7 +316,6 @@ export default function TecnicoView() {
                     className="mt-2 w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white resize-none transition-shadow text-sm" />
                 </div>
 
-                {/* Firma */}
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -450,7 +340,6 @@ export default function TecnicoView() {
                   )}
                 </div>
 
-                {/* Botones */}
                 <div className="w-full flex justify-center ">
                   <button type="submit" disabled={loading || !empresaId || !sedeId}
                     className={`py-4 px-4 rounded-xl  font-semibold text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-md ${
