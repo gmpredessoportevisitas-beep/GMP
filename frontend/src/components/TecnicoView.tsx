@@ -11,7 +11,7 @@ interface Point {
 
 export default function TecnicoView() {
   const {
-    empresas, sedes, loaded,
+    empresas, loaded,
     empresaId, setEmpresaId,
     sedeId, setSedeId,
     nombreAsesor, setNombreAsesor,
@@ -21,11 +21,11 @@ export default function TecnicoView() {
     materialesDetalle, setMaterialesDetalle,
     motivoVisita, setMotivoVisita,
     motivoVisitaOtro, setMotivoVisitaOtro,
-    firmaSvg, setFirmaSvg,
+    setFirmaSvg,
     preguntas, respuestasEncuesta, setRespuestasEncuesta,
     encuestaObservaciones, setEncuestaObservaciones,
     loading, descargando, guardado, setGuardado,
-    msg, setMsg,
+    msg,
     sedesFiltradas, empresaNombre, sedeNombre,
     guardarReporte, descargarPDF, resetForm, perfil, logout,
   } = useTecnicoView();
@@ -40,20 +40,24 @@ export default function TecnicoView() {
     const c = canvasRef.current;
     if (!c) return { x: 0, y: 0 };
     const r = c.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
     return {
-      x: ((e as React.TouchEvent).touches ? (e as React.TouchEvent).touches[0].clientX : (e as React.MouseEvent).clientX - r.left) / r.width * CW,
-      y: ((e as React.TouchEvent).touches ? (e as React.TouchEvent).touches[0].clientY : (e as React.MouseEvent).clientY - r.top) / r.height * CH,
+      x: (clientX - r.left) / r.width * CW,
+      y: (clientY - r.top) / r.height * CH,
     };
   }, []);
 
   const ptsToD = useCallback((pts: Point[]) => {
     if (!pts.length) return '';
-    if (pts.length === 1) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} l 0.1 0.1`;
-    if (pts.length === 2) return `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)} L ${pts[1].x.toFixed(1)} ${pts[1].y.toFixed(1)}`;
-    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    if (pts.length === 1) return `M ${pts[0]!.x.toFixed(1)} ${pts[0]!.y.toFixed(1)} l 0.1 0.1`;
+    if (pts.length === 2) return `M ${pts[0]!.x.toFixed(1)} ${pts[0]!.y.toFixed(1)} L ${pts[1]!.x.toFixed(1)} ${pts[1]!.y.toFixed(1)}`;
+    let d = `M ${pts[0]!.x.toFixed(1)} ${pts[0]!.y.toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
-      if (i === pts.length - 2) d += ` L ${pts[i+1].x.toFixed(1)} ${pts[i+1].y.toFixed(1)}`;
-      else d += ` Q ${pts[i].x.toFixed(1)} ${pts[i].y.toFixed(1)} ${((pts[i].x+pts[i+1].x)/2).toFixed(1)} ${((pts[i].y+pts[i+1].y)/2).toFixed(1)}`;
+      const next = pts[i + 1]!;
+      const curr = pts[i]!;
+      if (i === pts.length - 2) d += ` L ${next.x.toFixed(1)} ${next.y.toFixed(1)}`;
+      else d += ` Q ${curr.x.toFixed(1)} ${curr.y.toFixed(1)} ${((curr.x + next.x) / 2).toFixed(1)} ${((curr.y + next.y) / 2).toFixed(1)}`;
     }
     return d;
   }, []);
@@ -301,16 +305,16 @@ export default function TecnicoView() {
                         {[1,2,3,4,5].map(v => (
                           <button key={v} type="button" onClick={() => setRespuestasEncuesta(prev => ({ ...prev, [p.id]: prev[p.id] === v ? 0 : v }))}
                             className={`w-7 h-7 rounded-md flex items-center justify-center transition-all ${
-                              respuestasEncuesta[p.id] >= v ? 'text-amber-400 scale-110' : 'text-gray-200 hover:text-amber-300'
+                              (respuestasEncuesta[p.id] ?? 0) >= v ? 'text-amber-400 scale-110' : 'text-gray-200 hover:text-amber-300'
                             }`}>
                             <svg fill="currentColor" viewBox="0 0 24 24" className="w-5 h-5">
                               <path d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                             </svg>
                           </button>
                         ))}
-                        {respuestasEncuesta[p.id] > 0 && (
+                        {(respuestasEncuesta[p.id] ?? 0) > 0 && (
                           <span className="ml-2 text-[10px] text-gray-400 self-center font-medium">
-                            {['Muy malo','Malo','Regular','Bueno','Excelente'][respuestasEncuesta[p.id] - 1]}
+                            {['Muy malo','Malo','Regular','Bueno','Excelente'][(respuestasEncuesta[p.id] ?? 0) - 1]}
                           </span>
                         )}
                       </div>

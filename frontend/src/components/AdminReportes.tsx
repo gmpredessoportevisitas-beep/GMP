@@ -10,7 +10,7 @@ export default function AdminReportes() {
   const {
     reportes, loading, error, pagina, setPagina,
     descargando, previewUrl, previewLoadingId,
-    msg, encuestaData, encuestaLoading,
+    msg, encuestaData,
     cargar, descargarPDF, previsualizar, cerrarPreview,
     verEncuesta, cerrarEncuesta, exportarCSV, setMsg,
     LIMIT,

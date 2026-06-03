@@ -118,7 +118,7 @@ export default function EncuestaForm({ reporteId }: { reporteId: number }) {
                       type="button"
                       onClick={() => setValor(p.id, v)}
                       className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all text-xl ${
-                        respuestas[p.id] >= v
+                        (respuestas[p.id] ?? 0) >= v
                           ? 'text-yellow-400 scale-110'
                           : 'text-gray-300 hover:text-yellow-300'
                       }`}
@@ -130,8 +130,8 @@ export default function EncuestaForm({ reporteId }: { reporteId: number }) {
                     </button>
                   ))}
                 </div>
-                {respuestas[p.id] > 0 && (
-                  <p className="text-center text-xs text-gray-500 mt-1">{labels[respuestas[p.id] - 1]}</p>
+                {(respuestas[p.id] ?? 0) > 0 && (
+                  <p className="text-center text-xs text-gray-500 mt-1">{labels[(respuestas[p.id] ?? 0) - 1]}</p>
                 )}
               </div>
             ))}

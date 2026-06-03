@@ -8,8 +8,8 @@ function Th({ children, className = '' }: { children: ReactNode; className?: str
 
 export default function AdminUsuarios() {
   const {
-    items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
-    cargar, resetForm, crearUsuario, toggleActivo,
+    items, form, setForm, saving, cargando, msg, showForm, setShowForm,
+    resetForm, crearUsuario, toggleActivo,
   } = useAdminUsuarios();
 
   return (
@@ -67,7 +67,7 @@ export default function AdminUsuarios() {
             </div>
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">Rol</label>
-              <select value={form.rol} onChange={e => setForm({...form, rol: e.target.value})}
+              <select value={form.rol} onChange={e => setForm({...form, rol: e.target.value as 'admin' | 'tecnico'})}
                 className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all">
                 <option value="tecnico">Tecnico</option>
                 <option value="admin">Administrador</option>

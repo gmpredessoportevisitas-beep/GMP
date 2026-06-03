@@ -8,7 +8,7 @@ function Th({ children, className = '' }: { children: ReactNode; className?: str
 
 export default function AdminSedes() {
   const {
-    items, empresas, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items, empresas, form, setForm, editId, saving, cargando, msg, showForm, setShowForm,
     resetForm, guardar, editar, eliminar, empresaNombre,
   } = useAdminSedes();
 
