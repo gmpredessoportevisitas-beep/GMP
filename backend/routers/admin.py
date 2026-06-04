@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from config import supabase
 from schemas import EmpresaCreate, SedeCreate, UsuarioCreate
@@ -35,8 +36,20 @@ async def eliminar_empresa(empresa_id: int, admin: dict = Depends(solo_admin)):
 
 
 @router.get("/sedes")
-async def listar_sedes(admin: dict = Depends(solo_admin)):
-    return supabase.table("sedes").select("*, empresas(nombre)").order("nombre").execute().data
+async def listar_sedes(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    search: Optional[str] = None,
+    empresa_id: Optional[int] = None,
+    admin: dict = Depends(solo_admin),
+):
+    q = supabase.table("sedes").select("*, empresas(nombre)", count="exact").order("nombre")
+    if search:
+        q = q.or_(f"nombre.ilike.%{search}%,direccion.ilike.%{search}%")
+    if empresa_id:
+        q = q.eq("empresa_id", empresa_id)
+    result = q.range(offset, offset + limit - 1).execute()
+    return {"items": result.data, "total": result.count}
 
 
 @router.post("/sedes", status_code=201)
@@ -61,8 +74,10 @@ async def eliminar_sede(sede_id: int, admin: dict = Depends(solo_admin)):
 
 
 @router.get("/usuarios")
-async def listar_usuarios(admin: dict = Depends(solo_admin)):
-    return supabase.table("perfiles").select("*").order("nombre_completo").execute().data
+async def listar_usuarios(admin: dict = Depends(solo_admin), solo_tecnicos: bool = False):
+    if solo_tecnicos:
+        return supabase.table("perfiles").select("id, nombre_completo, username, email, rol, activo, creado_en").eq("rol", "tecnico").order("nombre_completo").execute().data
+    return supabase.table("perfiles").select("id, nombre_completo, username, email, rol, activo, creado_en").order("nombre_completo").execute().data
 
 
 @router.post("/usuarios", status_code=201)

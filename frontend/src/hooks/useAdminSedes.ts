@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Sede, Empresa, SedeForm } from '../types';
+import { useDebounce } from './useDebounce';
+import { Sede, Empresa, SedeForm, PaginatedResponse } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
+const PAGE_SIZE = 20;
 
 export default function useAdminSedes() {
   const { getToken } = useAuth();
   const [items, setItems] = useState<Sede[]>([]);
+  const [total, setTotal] = useState(0);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [form, setForm] = useState<SedeForm>({ empresa_id: '', nombre: '', direccion: '', ciudad: '' });
   const [editId, setEditId] = useState<number | null>(null);
@@ -14,21 +17,40 @@ export default function useAdminSedes() {
   const [cargando, setCargando] = useState(true);
   const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [pagina, setPagina] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEmpresaId, setFilterEmpresaId] = useState<number | null>(null);
+  const [allEmpresas, setAllEmpresas] = useState<Empresa[]>([]);
+
+  const debouncedSearch = useDebounce(searchTerm, 300);
 
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
       const t = await getToken();
-      const [rSedes, rEmp] = await Promise.all([
-        fetch(`${API}/api/admin/sedes`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
-      ]);
-      if (rSedes.ok) setItems(await rSedes.json() as Sede[]);
-      if (rEmp.ok) setEmpresas(await rEmp.json() as Empresa[]);
+      const params = new URLSearchParams({
+        limit: String(PAGE_SIZE),
+        offset: String(pagina * PAGE_SIZE),
+      });
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (filterEmpresaId !== null) params.set('empresa_id', String(filterEmpresaId));
+
+      const rSedes = await fetch(`${API}/api/admin/sedes?${params}`, { headers: { Authorization: `Bearer ${t}` } });
+      if (rSedes.ok) {
+        const data = await rSedes.json() as PaginatedResponse<Sede>;
+        setItems(data.items);
+        setTotal(data.total);
+      }
+      const rEmp = await fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } });
+      if (rEmp.ok) {
+        const empData = await rEmp.json() as Empresa[];
+        setAllEmpresas(empData);
+        setEmpresas(empData);
+      }
     } finally {
       setCargando(false);
     }
-  }, [getToken]);
+  }, [getToken, pagina, debouncedSearch, filterEmpresaId]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -80,7 +102,8 @@ export default function useAdminSedes() {
   }, [empresas]);
 
   return {
-    items, empresas, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
-    cargar, resetForm, guardar, editar, eliminar, empresaNombre,
+    items, total, empresas, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    cargar, resetForm, guardar, editar, eliminar, empresaNombre, allEmpresas,
+    pagina, setPagina, searchTerm, setSearchTerm, filterEmpresaId, setFilterEmpresaId, PAGE_SIZE,
   };
 }

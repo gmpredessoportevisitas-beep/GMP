@@ -1,104 +1,100 @@
-import { ReactNode } from 'react';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 import useAdminEmpresas from '../hooks/useAdminEmpresas';
-
-function Th({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
-}
+import SearchBar from './SearchBar';
+import TableTh from './TableTh';
+import PageHeader from './PageHeader';
+import AddEmpresaIcon from '../assets/icons/empresas/AddEmpresaIcon';
+import CloseEmpresaIcon from '../assets/icons/empresas/CloseEmpresaIcon';
+import CheckEmpresaIcon from '../assets/icons/empresas/CheckEmpresaIcon';
+import ButtonCrud from './ButtonCrud';
 
 export default function AdminEmpresas() {
   const {
-    items, form, setForm, editId, saving, cargando, msg, showForm, setShowForm,
-    resetForm, guardar, editar, eliminar,
+    items, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    resetForm, guardar, editar, eliminar, searchTerm, setSearchTerm,
   } = useAdminEmpresas();
 
   return (
     <div className="animate-fade-in max-w-[100vw] sm:mx-auto">
-      <div className="flex flex-col sm:gap-0 gap-4 sm:flex-row items-center sm:justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Empresas</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Gestion de empresas registradas en el sistema</p>
-        </div>
-        <button onClick={() => setShowForm(!showForm)}
-          className="py-2.5 px-5 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-md shadow-primary-600/20 flex items-center gap-2 text-sm">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          {showForm ? 'Cerrar' : 'Nueva Empresa'}
-        </button>
-      </div>
-
+        <PageHeader
+          title="Empresas"
+          subtitle="Gestion de empresas registradas en el sistema"
+          button={
+            <ButtonCrud 
+              label={'Nueva Empresa'} 
+              onClick={() => setShowForm(!showForm)}
+              className={showForm ? 'bg-gray-400 ' : 'bg-primary-600 hover:bg-primary-700'}
+              icon={<AddEmpresaIcon/> } 
+              disabled={showForm ? true : false}
+            />
+          }
+        />
       {msg && (
         <div className={`mb-5 p-4 rounded-xl text-sm font-medium border flex items-center gap-3 ${
           msg.includes('Error') ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
         }`}>
-          {msg.includes('Error') ? (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           {msg}
+          <button onClick={() => setMsg('')} className="ml-auto text-gray-400 hover:text-gray-600">X</button>
         </div>
       )}
-
+      <div className="mb-5">
+        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Buscar por nombre, NIT, direccion..." />
+      </div>
       {showForm && (
         <form onSubmit={guardar} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-bold text-gray-800 mb-1">{editId ? 'Editar Empresa' : 'Nueva Empresa'}</h3>
+          <h3 className="text-md font-bold text-gray-800 mb-1">{editId ? 'Editar Empresa' : 'Nueva Empresa'}</h3>
           <p className="text-xs text-gray-400 mb-5">{editId ? 'Modifica los datos de la empresa' : 'Ingresa los datos de la nueva empresa'}</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre <span className="text-red-500">*</span></label>
               <input placeholder="Razon social de la empresa" value={form.nombre} onChange={e => setForm({...form, nombre: e.target.value})} required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">NIT</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">NIT</label>
               <input placeholder="Identificacion tributaria" value={form.nit} onChange={e => setForm({...form, nit: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Telefono</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Telefono</label>
               <input placeholder="Numero de contacto" value={form.telefono} onChange={e => setForm({...form, telefono: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Email</label>
               <input placeholder="Correo electronico" type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Direccion</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Direccion</label>
               <input placeholder="Direccion fisica" value={form.direccion} onChange={e => setForm({...form, direccion: e.target.value})}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
           </div>
-          <div className="flex gap-3 mt-6">
-            <button type="submit" disabled={saving}
-              className="py-3 px-6 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all disabled:opacity-50 shadow-md flex items-center gap-2">
-              {saving ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                </svg>
-              )}
-              {saving ? 'Guardando...' : editId ? 'Actualizar Empresa' : 'Crear Empresa'}
-            </button>
-            <button type="button" onClick={resetForm}
-              className="py-3 px-6 bg-white text-gray-700 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all">
-              Cancelar
-            </button>
+          <div className="flex justify-start items-center gap-2 mt-4">
+            <ButtonCrud
+              label={editId ? 'Actualizar Empresa' : 'Crear Empresa'}
+              type="submit"
+              icon={!saving ? <CheckEmpresaIcon/> : <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />}
+              className={'bg-primary-600 hover:bg-primary-700  shadow-sm'}
+              disabled={saving}
+            />
+            <ButtonCrud
+              label={'Cancelar'}
+              onClick={resetForm}
+              icon={<CloseEmpresaIcon/>}
+              className={'bg-white !text-gray-700 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all '}
+            />
           </div>
         </form>
       )}
 
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         {cargando ? (
-          <div className="flex flex-col items-center py-20">
+          <div className="flex flex-col items-center sm:py-60 py-20">
             <AnimatedWifiIcon />
           </div>
         ) : (
@@ -106,12 +102,12 @@ export default function AdminEmpresas() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
-                  <Th className="text-white/80">ID</Th>
-                  <Th className="text-white/80">Nombre</Th>
-                  <Th className="text-white/80">NIT</Th>
-                  <Th className="text-white/80">Telefono</Th>
-                  <Th className="text-white/80">Email</Th>
-                  <Th className="text-white/80 text-center">Acciones</Th>
+                    <TableTh className="text-white/80">ID</TableTh>
+                    <TableTh className="text-white/80">Nombre</TableTh>
+                    <TableTh className="text-white/80">NIT</TableTh>
+                    <TableTh className="text-white/80">Telefono</TableTh>
+                    <TableTh className="text-white/80">Email</TableTh>
+                    <TableTh className="text-white/80 text-center">Acciones</TableTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">

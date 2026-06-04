@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDebounce } from './useDebounce';
 import { Empresa, EmpresaForm } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
@@ -13,6 +14,7 @@ export default function useAdminEmpresas() {
   const [cargando, setCargando] = useState(true);
   const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -76,8 +78,21 @@ export default function useAdminEmpresas() {
     }
   }, [getToken, cargar]);
 
+  const debouncedSearch = useDebounce(searchTerm, 300);
+  const filteredItems = useMemo(() => {
+    if (!debouncedSearch) return items;
+    const term = debouncedSearch.toLowerCase();
+    return items.filter(i =>
+      i.nombre.toLowerCase().includes(term) ||
+      (i.nit || '').toLowerCase().includes(term) ||
+      (i.direccion || '').toLowerCase().includes(term) ||
+      (i.telefono || '').toLowerCase().includes(term) ||
+      (i.email || '').toLowerCase().includes(term)
+    );
+  }, [items, debouncedSearch]);
+
   return {
-    items, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
-    cargar, resetForm, guardar, editar, eliminar,
+    items: filteredItems, allItems: items, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    cargar, resetForm, guardar, editar, eliminar, searchTerm, setSearchTerm,
   };
 }

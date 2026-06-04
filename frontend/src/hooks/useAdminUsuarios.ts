@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useDebounce } from './useDebounce';
 import { Perfil, UsuarioForm } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
@@ -12,6 +13,9 @@ export default function useAdminUsuarios() {
   const [cargando, setCargando] = useState(true);
   const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filtroRol, setFiltroRol] = useState<string | null>(null);
+  const [filtroEstado, setFiltroEstado] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -67,8 +71,25 @@ export default function useAdminUsuarios() {
     }
   }, [getToken, cargar]);
 
+  const debouncedSearch = useDebounce(searchTerm, 300);
+  const filteredItems = useMemo(() => {
+    let result = items;
+    if (debouncedSearch) {
+      const term = debouncedSearch.toLowerCase();
+      result = result.filter(i =>
+        i.nombre_completo.toLowerCase().includes(term) ||
+        (i.username || '').toLowerCase().includes(term)
+      );
+    }
+    if (filtroRol) result = result.filter(i => i.rol === filtroRol);
+    if (filtroEstado === 'activo') result = result.filter(i => i.activo);
+    else if (filtroEstado === 'inactivo') result = result.filter(i => !i.activo);
+    return result;
+  }, [items, debouncedSearch, filtroRol, filtroEstado]);
+
   return {
-    items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items: filteredItems, allItems: items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
     cargar, resetForm, crearUsuario, toggleActivo,
+    searchTerm, setSearchTerm, filtroRol, setFiltroRol, filtroEstado, setFiltroEstado,
   };
 }

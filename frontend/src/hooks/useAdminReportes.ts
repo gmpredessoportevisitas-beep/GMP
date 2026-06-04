@@ -1,13 +1,17 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Reporte, EncuestaData } from '../types';
+import { useDebounce } from './useDebounce';
+import { ReporteVista, Perfil, Empresa, EncuestaData, PaginatedResponse } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const LIMIT = 20;
 
 export default function useAdminReportes() {
   const { getToken } = useAuth();
-  const [reportes, setReportes] = useState<Reporte[]>([]);
+  const [reportes, setReportes] = useState<ReporteVista[]>([]);
+  const [totalReportes, setTotalReportes] = useState(0);
+  const [tecnicos, setTecnicos] = useState<Perfil[]>([]);
+  const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [pagina, setPagina] = useState(0);
@@ -16,25 +20,58 @@ export default function useAdminReportes() {
   const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
   const [msg, setMsg] = useState<{ tipo: string; texto: string }>({ tipo: '', texto: '' });
   const [encuestaData, setEncuestaData] = useState<EncuestaData | null>(null);
-  const [encuestaLoading, setEncuestaLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterEmpresaId, setFilterEmpresaId] = useState<number | null>(null);
+  const [filterTecnicoId, setFilterTecnicoId] = useState<string | null>(null);
+  const [filterMotivo, setFilterMotivo] = useState<string | null>(null);
+  const [fechaInicio, setFechaInicio] = useState('');
+  const [fechaFin, setFechaFin] = useState('');
 
-  const cargar = useCallback(async (offset = 0) => {
+  const debouncedSearch = useDebounce(searchTerm, 300);
+
+  const cargar = useCallback(async () => {
     setLoading(true); setError('');
     try {
       const t = await getToken();
-      const res = await fetch(`${API}/api/reportes?limit=${LIMIT}&offset=${offset}`, {
+      const params = new URLSearchParams({ limit: String(LIMIT), offset: String(pagina * LIMIT) });
+      if (debouncedSearch) params.set('search', debouncedSearch);
+      if (filterEmpresaId !== null) params.set('empresa_id', String(filterEmpresaId));
+      if (filterTecnicoId !== null) params.set('tecnico_id', filterTecnicoId);
+      if (filterMotivo !== null) params.set('motivo_visita', filterMotivo);
+      if (fechaInicio) params.set('fecha_inicio', fechaInicio);
+      if (fechaFin) params.set('fecha_fin', fechaFin);
+
+      const res = await fetch(`${API}/api/reportes?${params}`, {
         headers: { Authorization: `Bearer ${t}` },
       });
       if (!res.ok) throw new Error(`Error ${res.status}`);
-      setReportes(await res.json() as Reporte[]);
+      const data = await res.json() as PaginatedResponse<ReporteVista>;
+      setReportes(data.items);
+      setTotalReportes(data.total);
     } catch (err) {
       setError((err as Error).message);
     } finally {
       setLoading(false);
     }
+  }, [getToken, pagina, debouncedSearch, filterEmpresaId, filterTecnicoId, filterMotivo, fechaInicio, fechaFin]);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
+  const cargarFiltros = useCallback(async () => {
+    try {
+      const t = await getToken();
+      const [rTec, rEmp] = await Promise.all([
+        fetch(`${API}/api/admin/usuarios?solo_tecnicos=true`, { headers: { Authorization: `Bearer ${t}` } }),
+        fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
+      ]);
+      if (rTec.ok) setTecnicos(await rTec.json() as Perfil[]);
+      if (rEmp.ok) setEmpresas(await rEmp.json() as Empresa[]);
+    } catch {
+      setMsg({ tipo: 'error', texto: 'Error al cargar filtros' });
+    }
   }, [getToken]);
 
-  useEffect(() => { cargar(pagina * LIMIT); }, [pagina, cargar]);
+  useEffect(() => { cargarFiltros(); }, [cargarFiltros]);
 
   const descargarPDF = useCallback(async (id: number) => {
     setDescargando(id);
@@ -84,7 +121,7 @@ export default function useAdminReportes() {
   }, [previewUrl]);
 
   const verEncuesta = useCallback(async (reporteId: number) => {
-    setEncuestaLoading(true);
+    setEncuestaData(null);
     setMsg({ tipo: '', texto: '' });
     try {
       const t = await getToken();
@@ -99,8 +136,6 @@ export default function useAdminReportes() {
       }
     } catch (err) {
       setMsg({ tipo: 'error', texto: (err as Error).message });
-    } finally {
-      setEncuestaLoading(false);
     }
   }, [getToken]);
 
@@ -117,9 +152,9 @@ export default function useAdminReportes() {
     const h = ['ID', 'Fecha', 'Empresa', 'Sede', 'Tecnico', 'Asesor', 'Telefono Asesor', 'Hallazgos', 'Uso Materiales', 'Materiales Detalle', 'Motivo Visita', 'Motivo Visita Otro'];
     const rows = reportes.map(r => [
       r.id, formatFecha(r.fecha_hora),
-      csv(r.empresas?.nombre),
-      csv(r.sedes?.nombre),
-      csv(r.perfiles?.nombre_completo),
+      csv(r.empresa_nombre),
+      csv(r.sede_nombre),
+      csv(r.tecnico_nombre),
       csv(r.nombre_asesor),
       csv(r.telefono_asesor),
       csv(r.hallazgos),
@@ -138,11 +173,17 @@ export default function useAdminReportes() {
   const setMsgAction = useCallback((m: { tipo: string; texto: string }) => setMsg(m), []);
 
   return {
-    reportes, loading, error, pagina, setPagina,
+    reportes, totalReportes, loading, error, pagina, setPagina,
     descargando, previewUrl, previewLoadingId,
-    msg, encuestaData, encuestaLoading,
+    msg, encuestaData,
     cargar, descargarPDF, previsualizar, cerrarPreview,
     verEncuesta, cerrarEncuesta, exportarCSV, setMsg: setMsgAction,
-    LIMIT,
+    LIMIT, tecnicos, empresas,
+    searchTerm, setSearchTerm,
+    filterEmpresaId, setFilterEmpresaId,
+    filterTecnicoId, setFilterTecnicoId,
+    filterMotivo, setFilterMotivo,
+    fechaInicio, setFechaInicio,
+    fechaFin, setFechaFin,
   };
 }

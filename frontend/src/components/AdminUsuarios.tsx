@@ -1,102 +1,128 @@
-import { ReactNode } from 'react';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 import useAdminUsuarios from '../hooks/useAdminUsuarios';
+import SearchBar from './SearchBar';
+import FilterChips from './FilterChips';
+import TableTh from './TableTh';
+import PageHeader from './PageHeader';
+import CloseUsuarioIcon from '../assets/icons/usuarios/CloseUsuarioIcon';
+import AddUsuarioIcon from '../assets/icons/usuarios/AddUsuarioIcon';
+import ButtonCrud from './ButtonCrud';
+import CheckUsuarioIcon from '../assets/icons/usuarios/CheckUsuarioIcon';
 
-function Th({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
-}
 
 export default function AdminUsuarios() {
   const {
-    items, form, setForm, saving, cargando, msg, showForm, setShowForm,
+    items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
     resetForm, crearUsuario, toggleActivo,
+    searchTerm, setSearchTerm, filtroRol, setFiltroRol, filtroEstado, setFiltroEstado,
   } = useAdminUsuarios();
+
+  const rolChips = [
+    { key: 'all', label: 'Todos', active: filtroRol === null },
+    { key: 'admin', label: 'Administrador', active: filtroRol === 'admin' },
+    { key: 'tecnico', label: 'Tecnico', active: filtroRol === 'tecnico' },
+  ];
+
+  const estadoChips = [
+    { key: 'all', label: 'Todos', active: filtroEstado === null },
+    { key: 'activo', label: 'Activo', active: filtroEstado === 'activo' },
+    { key: 'inactivo', label: 'Inactivo', active: filtroEstado === 'inactivo' },
+  ];
 
   return (
     <div className="animate-fade-in max-w-[100vw] sm:mx-auto">
-      <div className="flex flex-col sm:gap-0 gap-4 sm:flex-row items-center sm:justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Usuarios</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Gestion de tecnicos y administradores del sistema</p>
-        </div>
-        <button onClick={() => setShowForm(!showForm)}
-          className="py-2.5 px-5 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all shadow-md shadow-primary-600/20 flex items-center gap-2 text-sm">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          {showForm ? 'Cerrar' : 'Nuevo Usuario'}
-        </button>
-      </div>
+        <PageHeader
+          title="Usuarios"
+          subtitle="Gestion de tecnicos y administradores del sistema"
+          button={
+            <ButtonCrud
+              label="Nuevo Usuario"
+              onClick={() => setShowForm(!showForm)}
+              icon={<AddUsuarioIcon/>}
+              className={showForm ? 'bg-gray-400 ' : 'bg-primary-600 hover:bg-primary-700'}
+              disabled={showForm ? true : false}
+              type="button"
+            />
+          }
+        />
 
       {msg && (
         <div className={`mb-5 p-4 rounded-xl text-sm font-medium border flex items-center gap-3 ${
           msg.includes('Error') ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
         }`}>
-          {msg.includes('Error') ? (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          )}
+          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
           {msg}
+          <button onClick={() => setMsg('')} className="ml-auto text-gray-400 hover:text-gray-600">X</button>
         </div>
       )}
 
+      <div className="mb-4">
+        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Buscar por nombre o usuario..." />
+      </div>
+
+      <div className="mb-4 space-y-2 sm:px-0 px-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-gray-500">Rol:</span>
+          <FilterChips chips={rolChips} onToggle={(key) => setFiltroRol(key === 'all' ? null : key as 'admin' | 'tecnico')} />
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-xs font-semibold text-gray-500">Estado:</span>
+          <FilterChips chips={estadoChips} onToggle={(key) => setFiltroEstado(key === 'all' ? null : key)} />
+        </div>
+      </div>
+
       {showForm && (
         <form onSubmit={crearUsuario} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
-          <h3 className="text-lg font-bold text-gray-800 mb-1">Nuevo Usuario</h3>
+          <h3 className="text-md font-bold text-gray-800 mb-1">Nuevo Usuario</h3>
           <p className="text-xs text-gray-400 mb-5">Ingresa los datos del nuevo usuario del sistema</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Nombre Completo <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Nombre Completo <span className="text-red-500">*</span></label>
               <input placeholder="Nombres y apellidos" value={form.nombre_completo} onChange={e => setForm({...form, nombre_completo: e.target.value})} required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Usuario <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Usuario <span className="text-red-500">*</span></label>
               <input placeholder="Nombre de usuario" value={form.username} onChange={e => setForm({...form, username: e.target.value})} required
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Contrasena <span className="text-red-500">*</span></label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Contrasena <span className="text-red-500">*</span></label>
               <input placeholder="Minimo 6 caracteres" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required minLength={6}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Rol</label>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Rol</label>
               <select value={form.rol} onChange={e => setForm({...form, rol: e.target.value as 'admin' | 'tecnico'})}
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all">
+                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all">
                 <option value="tecnico">Tecnico</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
           </div>
-          <div className="flex gap-3 mt-6">
-            <button type="submit" disabled={saving}
-              className="py-3 px-6 bg-primary-600 text-white rounded-xl font-semibold hover:bg-primary-700 transition-all disabled:opacity-50 shadow-md flex items-center gap-2">
-              {saving ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              )}
-              {saving ? 'Creando...' : 'Crear Usuario'}
-            </button>
-            <button type="button" onClick={resetForm}
-              className="py-3 px-6 bg-white text-gray-700 border-2 border-gray-200 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all">
-              Cancelar
-            </button>
+          <div className="flex justify-start items-center gap-2 mt-4">
+            <ButtonCrud
+              label={saving ? 'Creando...' : 'Crear Usuario'}
+              type="submit"
+              disabled={saving}
+              icon={!saving ? <CheckUsuarioIcon/> : <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />}
+              className={'bg-primary-600 hover:bg-primary-700'}
+            />
+            <ButtonCrud
+              label="Cancelar"
+              onClick={resetForm}
+              icon={<CloseUsuarioIcon />}
+              className={'bg-white !text-gray-700 border border-gray-200 rounded-xl font-semibold hover:bg-gray-50 hover:border-gray-300 transition-all '}
+            />
           </div>
         </form>
       )}
 
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         {cargando ? (
-          <div className="flex flex-col items-center py-20">
+          <div className="flex flex-col items-center sm:py-60 py-20">
             <AnimatedWifiIcon />
           </div>
         ) : (
@@ -104,11 +130,11 @@ export default function AdminUsuarios() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
-                  <Th className="text-white/80">Nombre</Th>
-                  <Th className="text-white/80">Usuario</Th>
-                  <Th className="text-white/80">Rol</Th>
-                  <Th className="text-white/80">Estado</Th>
-                  <Th className="text-white/80 text-center">Accion</Th>
+                    <TableTh className="text-white/80">Nombre</TableTh>
+                    <TableTh className="text-white/80">Usuario</TableTh>
+                    <TableTh className="text-white/80">Rol</TableTh>
+                    <TableTh className="text-white/80">Estado</TableTh>
+                    <TableTh className="text-white/80 text-center">Accion</TableTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">

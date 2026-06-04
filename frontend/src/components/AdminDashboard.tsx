@@ -29,7 +29,7 @@ export default function AdminDashboard() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="h-screen bg-gray-50 flex">
       {/* Sidebar desktop */}
       <aside className="hidden md:flex md:flex-col w-64 bg-gradient-to-b from-primary-900 to-black text-white">
         <div className="p-5 border-b border-primary-800">
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Contenido */}
-        <main className="flex-1 sm:p-4 md:p-6 overflow-auto bg-gradient-to-b from-gray-50 to-white">
+        <main className="flex-1 md:px-12 md:py-8 py-4 overflow-auto bg-gradient-to-b from-gray-50 to-white">
           {tab === 'reportes' && <AdminReportes />}
           {tab === 'empresas' && <AdminEmpresas />}
           {tab === 'sedes' && <AdminSedes />}

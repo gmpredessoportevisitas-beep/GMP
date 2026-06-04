@@ -1,3 +1,4 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
@@ -45,18 +46,40 @@ async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario
 
 @router.get("/reportes")
 async def listar_reportes(
-    limit: int = Query(100, ge=1, le=1000),
+    limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    search: Optional[str] = None,
+    empresa_id: Optional[int] = None,
+    sede_id: Optional[int] = None,
+    tecnico_id: Optional[str] = None,
+    motivo_visita: Optional[str] = None,
+    fecha_inicio: Optional[str] = None,
+    fecha_fin: Optional[str] = None,
     usuario: dict = Depends(get_usuario_actual),
 ):
-    q = (supabase.table("reportes")
-         .select("*, empresas(nombre), sedes(nombre, ciudad), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
-         .order("fecha_hora", desc=True))
-
+    q = (supabase.from_("vista_reportes_busqueda")
+        .select("*", count="exact")
+        .order("fecha_hora", desc=True))
+        
     if usuario["rol"] != "admin":
         q = q.eq("tecnico_id", usuario["id"])
+    if search and search.strip():
+        q = q.ilike("texto_busqueda", f"%{search}%")
+    if empresa_id:
+        q = q.eq("empresa_id", empresa_id)
+    if sede_id:
+        q = q.eq("sede_id", sede_id)
+    if tecnico_id:
+        q = q.eq("tecnico_id", tecnico_id)
+    if motivo_visita:
+        q = q.eq("motivo_visita", motivo_visita)
+    if fecha_inicio:
+        q = q.gte("fecha_hora", fecha_inicio)
+    if fecha_fin:
+        q = q.lte("fecha_hora", f"{fecha_fin}T23:59:59")
 
-    return q.range(offset, offset + limit - 1).execute().data
+    result = q.range(offset, offset + limit - 1).execute()
+    return {"items": result.data, "total": result.count}
 
 
 @router.get("/reportes/{reporte_id}/pdf")

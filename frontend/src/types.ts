@@ -28,7 +28,7 @@ export interface Sede {
   empresas?: { nombre: string };
 }
 
-export interface Reporte {
+export interface ReporteVista {
   id: number;
   fecha_hora: string;
   empresa_id: number;
@@ -38,14 +38,14 @@ export interface Reporte {
   telefono_asesor: string;
   hallazgos: string;
   uso_materiales: boolean;
-  materiales_detalle: string;
+  materiales_detalle?: string;
   motivo_visita: string;
-  motivo_visita_otro: string;
+  motivo_visita_otro?: string;
   firma_vector: string;
   creado_en: string;
-  empresas?: { nombre: string };
-  sedes?: { nombre: string };
-  perfiles?: { nombre_completo: string };
+  empresa_nombre: string;
+  sede_nombre: string;
+  tecnico_nombre: string; 
 }
 
 export interface EncuestaPregunta {
@@ -102,4 +102,9 @@ export interface EncuestaRespuestaItem {
 export interface EncuestaData {
   encuesta: EncuestaSatisfaccion;
   respuestas: (EncuestaRespuesta & { encuesta_preguntas?: { texto: string } })[];
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
 }

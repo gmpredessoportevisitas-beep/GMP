@@ -1,19 +1,33 @@
-import { ReactNode } from 'react';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 import useAdminReportes from '../hooks/useAdminReportes';
+import SearchBar from './SearchBar';
+import FilterChips from './FilterChips';
+import Pagination from './Pagination';
+import TableTh from './TableTh';
+import PageHeader from './PageHeader';
 
-function Th({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <th className={`px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider ${className}`}>{children}</th>;
-}
+const MOTIVOS = [
+  { key: 'soporte', label: 'Soporte' },
+  { key: 'instalación', label: 'Instalación' },
+  { key: 'reubicación', label: 'Reubicación' },
+  { key: 'desinstalación', label: 'Desinstalación' },
+  { key: 'otro', label: 'Otro' },
+];
 
 export default function AdminReportes() {
   const {
-    reportes, loading, error, pagina, setPagina,
+    reportes, totalReportes, loading, error, pagina, setPagina,
     descargando, previewUrl, previewLoadingId,
     msg, encuestaData,
     cargar, descargarPDF, previsualizar, cerrarPreview,
     verEncuesta, cerrarEncuesta, exportarCSV, setMsg,
-    LIMIT,
+    LIMIT, tecnicos, empresas,
+    searchTerm, setSearchTerm,
+    filterEmpresaId, setFilterEmpresaId,
+    filterTecnicoId, setFilterTecnicoId,
+    filterMotivo, setFilterMotivo,
+    fechaInicio, setFechaInicio,
+    fechaFin, setFechaFin,
   } = useAdminReportes();
 
   function formatFecha(iso: string) {
@@ -22,32 +36,108 @@ export default function AdminReportes() {
     catch { return iso; }
   }
 
-  return (
-    <div className="animate-fade-in max-w-[100vw] sm:mx-auto">
-      <div className="flex flex-col sm:gap-0 gap-4 sm:flex-row items-center sm:justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Reportes</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Historial de reportes de mantenimiento generados</p>
-        </div>
-        <button onClick={exportarCSV} disabled={!reportes.length}
-          className="py-2.5 px-5 bg-white text-primary-600 border-2 border-primary-200 rounded-xl font-semibold hover:bg-primary-50 hover:border-primary-300 disabled:opacity-40 transition-all flex items-center gap-2 text-sm shadow-sm">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Exportar CSV
-        </button>
-      </div>
+  const filtroActivado = filterEmpresaId !== null || filterMotivo !== null || filterTecnicoId !== null || fechaInicio || fechaFin;
 
+  return (
+    <div className="animate-fade-in max-w-[100vw] sm:mx-auto min-h-full flex flex-col justify-between">
+      <div>
+        <PageHeader
+        title="Reportes"
+        subtitle="Historial de visitas técnicas realizadas"
+        // button={
+        //   <button onClick={exportarCSV} disabled={!reportes.length}
+        //     className="py-2.5 px-5 bg-white text-primary-600 border-2 border-primary-200 rounded-xl font-semibold hover:bg-primary-50 hover:border-primary-300 disabled:opacity-40 transition-all flex items-center gap-2 text-sm shadow-sm">
+        //     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        //       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        //     </svg>
+        //     Exportar CSV
+        //   </button>
+        // }
+      />
+      <div className="flex flex-col gap-2 sm:flex-row w-full justify-between">
+        <div className="space-y-1 sm:w-1/2 w-full sm:px-0 px-2">
+          {empresas.length > 0 && (
+            <div className="flex flex-col items-start gap-1 flex-wrap">
+              <span className="text-xs font-semibold text-gray-500">Empresa:</span>
+              <FilterChips
+                chips={[
+                  { key: 'all', label: 'Todas', active: filterEmpresaId === null },
+                  ...empresas.map(e => ({ key: String(e.id), label: e.nombre, active: filterEmpresaId === e.id }))
+                ]}
+                onToggle={(key) => {
+                  setFilterEmpresaId(key === 'all' ? null : Number(key));
+                }}
+              />
+            </div>
+          )}
+          <div className="flex flex-col items-start gap-1 flex-wrap">
+            <span className="text-xs font-semibold text-gray-500">Motivo:</span>
+            <FilterChips
+              chips={[
+                { key: 'all', label: 'Todos', active: filterMotivo === null },
+                ...MOTIVOS.map(m => ({ key: m.key, label: m.label, active: filterMotivo === m.key }))
+              ]}
+              onToggle={(key) => setFilterMotivo(key === 'all' ? null : key)}
+            />
+          </div>
+        </div>
+        <div className="flex flex-col items-start justify-start gap-1 w-full sm:items-end sm:w-1/2">
+          {tecnicos.length > 0 && (
+            <div className="flex flex-col sm:px-0 px-10 w-full sm:w-auto gap-1">
+              <label htmlFor="filtro-tecnico" className="text-xs font-semibold text-gray-500">
+                Técnico:
+              </label>
+              <select
+                id="filtro-tecnico"
+                value={filterTecnicoId || ""}
+                onChange={(e) => {
+                  const valor = e.target.value;
+                  setFilterTecnicoId(valor === "" ? null : valor);
+                }}
+                className="w-full sm:w-64 px-3 py-1 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                <option value="">Todos</option>
+                {tecnicos.map((t) => (
+                  <option key={t.id} value={t.id} className="hover:!bg-primary-600 hover:!text-white ">
+                    {t.nombre_completo}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          <div className="flex sm:justify-end justify-around sm:gap-4 w-full sm:w-full">
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-gray-500">Desde:</span>
+              <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)}
+                className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-xs font-semibold text-gray-500">Hasta:</span>
+              <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)}
+                className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent" />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="h-6">
+        {filtroActivado && (
+          <button
+            onClick={() => { setFilterEmpresaId(null); setFilterTecnicoId(null); setFilterMotivo(null); setFechaInicio(''); setFechaFin(''); }}
+            className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+          >
+            Limpiar filtros
+          </button>
+        )}
+      </div>
       {error && (
         <div className="mb-5 p-4 rounded-xl text-sm font-medium bg-red-50 text-red-800 border border-red-200 flex items-center gap-3">
           <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
           {error}
-          <button onClick={() => cargar(pagina * LIMIT)} className="ml-auto underline font-semibold">Reintentar</button>
+          <button onClick={() => cargar()} className="ml-auto underline font-semibold">Reintentar</button>
         </div>
       )}
-
       {msg.texto && (
         <div className={`mb-5 p-4 rounded-xl text-sm font-medium flex items-center gap-3 border ${
           msg.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' :
@@ -60,46 +150,51 @@ export default function AdminReportes() {
           <button onClick={() => setMsg({ tipo: '', texto: '' })} className="ml-auto text-gray-500 hover:text-gray-700 font-bold">X</button>
         </div>
       )}
-
+      <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Buscar reportes..." />
       {loading ? (
-        <div className="flex flex-col items-center py-20">
+        <div className="flex flex-col items-center sm:py-60 py-20 bg-white rounded-2xl shadow-lg border border-gray-100 mt-2">
           <AnimatedWifiIcon/>
         </div>
       ) : !reportes.length ? (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-16 text-center">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 px-16 sm:py-60 py-20 text-center mt-2">
           <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <p className="text-lg font-medium text-gray-400">Sin reportes registrados</p>
           <p className="text-sm text-gray-300 mt-1">Los reportes generados por los tecnicos apareceran aqui.</p>
+          {filtroActivado && (
+            <p className="text-sm text-gray-400 font-semibold">Prueba ajustando tus filtros para ver resultados</p>
+          )}
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-x-auto w-full sm:max-h-[calc(100vh-25rem)] max-h-[calc(100vh-14rem)] mt-2">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
-                    <Th className="text-white/80">ID</Th>
-                    <Th className="text-white/80">Fecha</Th>
-                    <Th className="text-white/80">Empresa</Th>
-                    <Th className="text-white/80">Sede</Th>
-                    <Th className="text-white/80">Tecnico</Th>
-                    <Th className="text-white/80">Asesor</Th>
-                    <Th className="text-white/80">Hallazgos</Th>
-                    <Th className="text-white/80 text-center">PDF/Enc.</Th>
+                    <TableTh className="text-white/80">ID</TableTh>
+                    <TableTh className="text-white/80">Fecha</TableTh>
+                    <TableTh className="text-white/80">Empresa</TableTh>
+                    <TableTh className="text-white/80">Sede</TableTh>
+                    <TableTh className="text-white/80">Tecnico</TableTh>
+                    <TableTh className="text-white/80">Motivo</TableTh>
+                    <TableTh className="text-white/80">Asesor</TableTh>
+                    <TableTh className="text-white/80">Hallazgos</TableTh>
+                    <TableTh className="text-white/80 text-center">PDF/Enc.</TableTh>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {reportes.map(r => (
                     <tr key={r.id} className="hover:bg-orange-50/50 transition-colors">
                       <td className="px-5 py-4 text-xs font-bold text-primary-600 font-mono">#{r.id}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500 whitespace-nowrap">{formatFecha(r.fecha_hora)}</td>
-                      <td className="px-5 py-4 text-sm font-medium text-gray-700">{r.empresas?.nombre || '—'}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500">{r.sedes?.nombre || '—'}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500">{r.perfiles?.nombre_completo || '—'}</td>
-                      <td className="px-5 py-4 text-sm text-gray-500">{r.nombre_asesor || '—'}</td>
-                      <td className="px-5 py-4 text-sm text-gray-400 max-w-[140px] truncate">{r.hallazgos || '—'}</td>
+                      <td className="px-5 py-4 text-xs text-gray-500 whitespace-nowrap">{formatFecha(r.fecha_hora)}</td>
+                      <td className="px-5 py-4 text-xs font-medium text-gray-700">{r.empresa_nombre || '—'}</td>
+                      <td className="px-5 py-4 text-xs text-gray-500">{r.sede_nombre || '—'}</td>
+                      <td className="px-5 py-4 text-xs text-gray-500">{r.tecnico_nombre || '—'}</td>
+                      <td className="px-5 py-4 text-xs text-gray-500">{r.motivo_visita || '—'}</td>
+                      <td className="px-5 py-4 text-xs text-gray-500">{r.nombre_asesor || '—'}</td>
+                      <td className="px-5 py-4 text-xs text-gray-400 max-w-[220px] truncate">{r.hallazgos || '—'}</td>
                       <td className="px-5 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => previsualizar(r.id)} 
@@ -113,8 +208,34 @@ export default function AdminReportes() {
                               </svg>
                             )}
                           </button>
+                          {previewUrl && (
+                            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in" onClick={cerrarPreview}>
+                              <div className="bg-white rounded-2xl w-full max-w-4xl h-[94vh] md:h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+                                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
+                                      <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                      </svg>
+                                    </div>
+                                    <div>
+                                      <h2 className="text-lg font-bold text-gray-800">Vista Previa del Reporte</h2>
+                                    </div>
+                                  </div>
+                                  <button onClick={cerrarPreview} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="Cerrar">
+                                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                  </button>
+                                </div>
+                                <div className="flex-1 bg-gray-200 min-h-0">
+                                  <iframe src={previewUrl} className="w-full h-full" title="Previsualizacion del PDF" />
+                                </div>
+                              </div>
+                            </div>
+                          )}
                           <button onClick={() => descargarPDF(r.id)} disabled={descargando === r.id}
-                            className={`inline-flex items-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold transition-all ${
+                            className={`inline-flex items-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all ${
                               descargando === r.id
                                 ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                 : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
@@ -129,7 +250,7 @@ export default function AdminReportes() {
                             {descargando === r.id ? '' : 'PDF'}
                           </button>
                           <button onClick={() => verEncuesta(r.id)}
-                            className="inline-flex items-center gap-1 py-2 px-3 rounded-xl text-xs font-bold transition-all bg-amber-500 text-white hover:bg-amber-600 shadow-sm">
+                            className="inline-flex items-center gap-1 py-2 px-2 rounded-xl text-xs font-bold transition-all bg-amber-500 text-white hover:bg-amber-600 shadow-sm">
                             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                             </svg>
@@ -143,56 +264,8 @@ export default function AdminReportes() {
               </table>
             </div>
           </div>
-
-          {previewUrl && (
-            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in" onClick={cerrarPreview}>
-              <div className="bg-white rounded-2xl w-full max-w-4xl h-[94vh] md:h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                      <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-800">Vista Previa del Reporte</h2>
-                    </div>
-                  </div>
-                  <button onClick={cerrarPreview} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="Cerrar">
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex-1 bg-gray-200 min-h-0">
-                  <iframe src={previewUrl} className="w-full h-full" title="Previsualizacion del PDF" />
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between mt-5 bg-white rounded-xl px-5 py-3 border border-gray-100 shadow-sm">
-            <button onClick={() => setPagina(p => Math.max(0, p-1))} disabled={pagina===0}
-              className="py-2 px-4 rounded-lg text-sm font-medium bg-white border border-gray-200 hover:bg-orange-50 hover:border-primary-300 disabled:opacity-40 transition-all flex items-center gap-1">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Anterior
-            </button>
-            <span className="text-sm font-semibold text-gray-600">
-              Pagina <span className="text-primary-600">{pagina + 1}</span>
-            </span>
-            <button onClick={() => setPagina(p => p+1)} disabled={reportes.length < LIMIT}
-              className="py-2 px-4 rounded-lg text-sm font-medium bg-white border border-gray-200 hover:bg-orange-50 hover:border-primary-300 disabled:opacity-40 transition-all flex items-center gap-1">
-              Siguiente
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
         </>
       )}
-
       {encuestaData && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 animate-fade-in" onClick={cerrarEncuesta}>
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
@@ -241,6 +314,8 @@ export default function AdminReportes() {
           </div>
         </div>
       )}
+      </div>
+      <Pagination pagina={pagina} total={totalReportes} limit={LIMIT} onChange={setPagina} />
     </div>
   );
 }
