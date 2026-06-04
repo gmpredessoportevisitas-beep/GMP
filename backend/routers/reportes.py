@@ -17,6 +17,9 @@ async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario
     row["fecha_hora"] = ahora_iso()
     row["creado_en"] = ahora_iso()
 
+    if data.autorizacion_datos:
+        row["fecha_autorizacion"] = ahora_iso()
+
     sede = supabase.table("sedes").select("empresa_id").eq("id", data.sede_id).execute()
     if not sede.data or sede.data[0]["empresa_id"] != data.empresa_id:
         raise HTTPException(400, "La sede no pertenece a la empresa seleccionada.")

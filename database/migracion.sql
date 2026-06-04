@@ -60,3 +60,8 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT ON auth.users
     FOR EACH ROW
     EXECUTE FUNCTION public.handle_new_user();
+
+-- 4. Campos de autorizacion de datos personales (Ley 1581 de 2012)
+ALTER TABLE reportes ADD COLUMN IF NOT EXISTS autorizacion_datos   BOOLEAN     NOT NULL DEFAULT false;
+ALTER TABLE reportes ADD COLUMN IF NOT EXISTS fecha_autorizacion   TIMESTAMPTZ DEFAULT NULL;
+ALTER TABLE reportes ADD COLUMN IF NOT EXISTS version_politica     VARCHAR(50) DEFAULT '';

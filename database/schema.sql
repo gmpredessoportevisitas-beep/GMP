@@ -79,6 +79,9 @@ CREATE TABLE IF NOT EXISTS reportes (
         CHECK (motivo_visita IN ('soporte', 'instalación', 'reubicación', 'desinstalación', 'otro')),
     motivo_visita_otro VARCHAR(255) NOT NULL DEFAULT '',
     firma_vector    TEXT            NOT NULL DEFAULT '',
+    autorizacion_datos  BOOLEAN     NOT NULL DEFAULT false,
+    fecha_autorizacion  TIMESTAMPTZ DEFAULT NULL,
+    version_politica    VARCHAR(50) DEFAULT '',
     creado_en       TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS idx_reportes_fecha    ON reportes (fecha_hora DESC);
@@ -135,4 +138,7 @@ COMMENT ON COLUMN perfiles.rol                 IS 'Rol del usuario: admin (gesti
 COMMENT ON COLUMN reportes.firma_vector        IS 'Firma del cliente en SVG vectorial (paths M/L/Q). Zero-Storage: se renderiza bajo demanda en el PDF.';
 COMMENT ON COLUMN reportes.motivo_visita       IS 'Motivo de la visita: soporte, instalación, reubicación, desinstalación u otro.';
 COMMENT ON COLUMN reportes.hallazgos           IS 'Hallazgos encontrados durante la visita (anteriormente observaciones).';
+COMMENT ON COLUMN reportes.autorizacion_datos  IS 'Autorización del titular para tratamiento de datos personales (Ley 1581 de 2012).';
+COMMENT ON COLUMN reportes.fecha_autorizacion  IS 'Fecha y hora en que el titular autorizó el tratamiento de datos.';
+COMMENT ON COLUMN reportes.version_politica    IS 'Versión de la política de privacidad aceptada por el titular.';
 COMMENT ON COLUMN encuesta_respuestas.valor    IS 'Valoración numérica del 1 al 5 (1 = Muy malo, 5 = Excelente).';

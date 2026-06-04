@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Empresa, Sede, EncuestaPregunta } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
+export const VERSION_POLITICA = '1.0';
 
 export default function useTecnicoView() {
   const { getToken, perfil, logout } = useAuth();
@@ -30,6 +31,8 @@ export default function useTecnicoView() {
   const [descargando, setDescargando] = useState(false);
   const [guardado, setGuardado] = useState<{ id: number } | null>(null);
   const [msg, setMsg] = useState<{ tipo: string; texto: string }>({ tipo: '', texto: '' });
+
+  const [aceptoPrivacidad, setAceptoPrivacidad] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -62,6 +65,13 @@ export default function useTecnicoView() {
   const guardarReporte = useCallback(async () => {
     setLoading(true);
     setMsg({ tipo: '', texto: '' });
+
+    if (!aceptoPrivacidad) {
+      setMsg({ tipo: 'error', texto: 'Debe aceptar la Politica de Tratamiento de Datos Personales.' });
+      setLoading(false);
+      return;
+    }
+
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/reportes`, {
@@ -82,6 +92,8 @@ export default function useTecnicoView() {
           encuesta_respuestas: Object.entries(respuestasEncuesta)
             .filter(([_, v]) => v > 0)
             .map(([pid, val]) => ({ pregunta_id: parseInt(pid), valor: val })),
+          autorizacion_datos: true,
+          version_politica: VERSION_POLITICA,
         }),
       });
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error del servidor'); }
@@ -93,7 +105,7 @@ export default function useTecnicoView() {
     } finally {
       setLoading(false);
     }
-  }, [getToken, empresaId, sedeId, nombreAsesor, telefonoAsesor, hallazgos, usoMateriales, materialesDetalle, motivoVisita, motivoVisitaOtro, firmaSvg, encuestaObservaciones, respuestasEncuesta]);
+  }, [getToken, empresaId, sedeId, nombreAsesor, telefonoAsesor, hallazgos, usoMateriales, materialesDetalle, motivoVisita, motivoVisitaOtro, firmaSvg, encuestaObservaciones, respuestasEncuesta, aceptoPrivacidad]);
 
   const descargarPDF = useCallback(async (reporteId: number) => {
     setDescargando(true);
@@ -121,6 +133,7 @@ export default function useTecnicoView() {
     setEncuestaObservaciones('');
     setRespuestasEncuesta(Object.fromEntries(preguntas.map(p => [p.id, 0])));
     setMsg({ tipo: '', texto: '' });
+    setAceptoPrivacidad(false);
   }, [preguntas]);
 
   return {
@@ -141,5 +154,6 @@ export default function useTecnicoView() {
     msg, setMsg,
     sedesFiltradas, empresaNombre, sedeNombre,
     guardarReporte, descargarPDF, resetForm, perfil, logout,
+    aceptoPrivacidad, setAceptoPrivacidad,
   };
 }

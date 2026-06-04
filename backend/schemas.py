@@ -46,6 +46,14 @@ class ReporteCreate(BaseModel):
     firma_vector: str = Field(default="", max_length=50000)
     encuesta_observaciones: str = Field(default="", max_length=2000)
     encuesta_respuestas: list[EncuestaRespuestaItem] = []
+    autorizacion_datos: bool = False
+    version_politica: str = Field(default="", max_length=50)
+
+
+class EncuestaPreguntaCreate(BaseModel):
+    texto: str = Field(..., min_length=1, max_length=500)
+    activa: bool = True
+    orden: int = Field(default=0, ge=0, le=32767)
 
 
 class EncuestaCreate(BaseModel):

@@ -4,6 +4,7 @@ import AdminEmpresas from './AdminEmpresas';
 import AdminSedes from './AdminSedes';
 import AdminUsuarios from './AdminUsuarios';
 import AdminReportes from './AdminReportes';
+import AdminEncuestaPreguntas from './AdminEncuestaPreguntas';
 
 interface Tab {
   id: string;
@@ -21,6 +22,8 @@ const TABS: Tab[] = [
     desc: 'Puntos de trabajo por empresa' },
   { id: 'usuarios', label: 'Usuarios', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z',
     desc: 'Tecnicos y administradores' },
+  { id: 'encuestas', label: 'Encuesta', icon: 'M8 9h8M8 13h6M12.01 18.594l-4.01 2.406v-3h-2a3 3 0 01-3-3v-8a3 3 0 013-3h12a3 3 0 013 3v5.5',
+    desc: 'Preguntas de satisfaccion' },
 ];
 
 export default function AdminDashboard() {
@@ -135,6 +138,7 @@ export default function AdminDashboard() {
           {tab === 'empresas' && <AdminEmpresas />}
           {tab === 'sedes' && <AdminSedes />}
           {tab === 'usuarios' && <AdminUsuarios />}
+          {tab === 'encuestas' && <AdminEncuestaPreguntas />}
         </main>
       </div>
     </div>

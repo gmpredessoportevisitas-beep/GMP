@@ -46,6 +46,9 @@ export interface ReporteVista {
   empresa_nombre: string;
   sede_nombre: string;
   tecnico_nombre: string; 
+  autorizacion_datos: boolean;
+  fecha_autorizacion: string | null;
+  version_politica: string;
 }
 
 export interface EncuestaPregunta {

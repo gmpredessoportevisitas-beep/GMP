@@ -1,7 +1,8 @@
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 
 from config import supabase
-from schemas import EncuestaCreate
+from schemas import EncuestaCreate, EncuestaPreguntaCreate
 from deps import get_usuario_actual, solo_admin
 from utils import ahora_iso
 
@@ -16,6 +17,36 @@ async def listar_preguntas():
               .order("orden")
               .execute())
     return result.data
+
+
+@router.get("/admin/encuesta-preguntas")
+async def listar_preguntas_admin(admin: dict = Depends(solo_admin)):
+    result = (supabase.table("encuesta_preguntas")
+              .select("*")
+              .order("orden")
+              .execute())
+    return result.data
+
+
+@router.post("/admin/encuesta-preguntas", status_code=201)
+async def crear_pregunta(data: EncuestaPreguntaCreate, admin: dict = Depends(solo_admin)):
+    row = data.model_dump()
+    row["creado_en"] = ahora_iso()
+    return supabase.table("encuesta_preguntas").insert(row).execute().data[0]
+
+
+@router.put("/admin/encuesta-preguntas/{pregunta_id}")
+async def editar_pregunta(pregunta_id: int, data: EncuestaPreguntaCreate, admin: dict = Depends(solo_admin)):
+    result = supabase.table("encuesta_preguntas").update(data.model_dump()).eq("id", pregunta_id).execute()
+    if not result.data:
+        raise HTTPException(404, "Pregunta no encontrada")
+    return result.data[0]
+
+
+@router.delete("/admin/encuesta-preguntas/{pregunta_id}")
+async def eliminar_pregunta(pregunta_id: int, admin: dict = Depends(solo_admin)):
+    supabase.table("encuesta_preguntas").delete().eq("id", pregunta_id).execute()
+    return {"ok": True}
 
 
 @router.post("/reportes/{reporte_id}/encuesta", status_code=201)

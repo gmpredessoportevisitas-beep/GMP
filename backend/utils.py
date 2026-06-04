@@ -111,10 +111,10 @@ class ReportePDF(FPDF):
     def header(self):
         self.set_font("Helvetica", "B", 18)
         self.set_text_color(*self.COLOR_PRIMARIO)
-        self.cell(0, 10, "SOPORTE DE VISITAS", align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 10, "Reporte de Visitas", align="C", new_x="LMARGIN", new_y="NEXT")
         self.set_font("Helvetica", "", 9)
         self.set_text_color(100, 100, 100)
-        self.cell(0, 6, "Sistema GMP - Gestion de Mantenimiento Preventivo", align="C", new_x="LMARGIN", new_y="NEXT")
+        self.cell(0, 6, "Sistema GMP - Reporte de Visitas", align="C", new_x="LMARGIN", new_y="NEXT")
         self.set_draw_color(*self.COLOR_PRIMARIO)
         self.set_line_width(0.6)
         self.line(self.l_margin, self.get_y() + 1, self.w - self.r_margin, self.get_y() + 1)
@@ -144,12 +144,15 @@ class ReportePDF(FPDF):
         motivo = self.reporte.get("motivo_visita", "").capitalize() or "-"
         if self.reporte.get("motivo_visita") == "otro" and self.reporte.get("motivo_visita_otro", "").strip():
             motivo = f"Otro: {self.reporte.get('motivo_visita_otro')}"
+            motivo = motivo.encode('ascii', 'ignore').decode('ascii')
         materiales = "Si" if self.reporte.get("uso_materiales") else "No"
+        nombre_asesor = self.reporte.get("nombre_asesor", "-").encode('ascii', 'ignore').decode('ascii')
+        telefono_asesor = self.reporte.get("telefono_asesor", "-").encode('ascii', 'ignore').decode('ascii')
         datos = [
             ("ID Reporte", str(self.reporte.get("id", "-")), "Fecha y Hora", format_fecha(self.reporte.get("fecha_hora", ""))),
             ("Empresa", self.empresa, "Sede / Punto", self.sede),
             ("Tecnico", self.tecnico, "Email Tecnico", self.email_tec),
-            ("Asesor", self.reporte.get("nombre_asesor", "-"), "Tel. Asesor", self.reporte.get("telefono_asesor", "-")),
+            ("Asesor", nombre_asesor, "Tel. Asesor", telefono_asesor),
             ("Motivo Visita", motivo, "Uso Materiales", materiales),
         ]
         for fila in datos:
@@ -160,6 +163,7 @@ class ReportePDF(FPDF):
         if self.reporte.get("uso_materiales") and self.reporte.get("materiales_detalle", "").strip():
             self.seccion_titulo("Materiales Utilizados")
             detalle = self.reporte.get("materiales_detalle", "").strip()
+            detalle = detalle.encode('ascii', 'ignore').decode('ascii')
             self.set_font("Helvetica", "", 9)
             self.set_text_color(*self.COLOR_TEXTO)
             self.set_fill_color(252, 248, 245)
@@ -188,6 +192,7 @@ class ReportePDF(FPDF):
     def seccion_hallazgos(self):
         self.seccion_titulo("Hallazgos")
         obs = self.reporte.get("hallazgos", "").strip() or "Sin hallazgos registrados."
+        obs = obs.encode('ascii', 'ignore').decode('ascii')
         self.set_font("Helvetica", "", 9)
         self.set_text_color(*self.COLOR_TEXTO)
         self.set_fill_color(252, 248, 245)
