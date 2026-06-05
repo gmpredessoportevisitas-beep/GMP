@@ -10,9 +10,9 @@ export default defineConfig({
       injectRegister: 'inline',
       includeAssets: ['logo.png', 'favicon.svg', 'logo.svg'], 
       manifest: {
-        name: 'GMP - Gestión de Mantenimiento',
-        short_name: 'GMP',
-        description: 'Sistema de Automatización para Reportes de Mantenimiento Preventivo',
+        name: 'Sistema de gestión de reportes',
+        short_name: 'SGR',
+        description: 'Sistema de gestión de servicios de campo',
         theme_color: '#D75501',
         background_color: '#D75501',
         display: 'standalone',
@@ -21,17 +21,17 @@ export default defineConfig({
         lang: 'es-CO',
         icons: [
           {
-            src: 'logo.png',
+            src: 'logo-white.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'logo.png',
+            src: 'logo-white.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'logo.png',
+            src: 'logo-white.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable',
