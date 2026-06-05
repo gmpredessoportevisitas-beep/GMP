@@ -129,8 +129,8 @@ export default function TecnicoView() {
               className="w-16 h-10"
             />
             <div className="flex flex-col justify-center w-full">
-              <h1 className="text-lg font-semibold text-center">Reporte de Mantenimiento</h1>
-              <p className="text-xs text-white/70 truncate max-w-[180px] sm:max-w-none text-center">{perfil?.nombre_completo}</p>
+              <h1 className="text-lg font-semibold text-center w-full">Reporte de Mantenimiento</h1>
+              <p className="text-xs text-white/70 truncate  sm:max-w-none text-center">{perfil?.nombre_completo}</p>
           </div>
           <button onClick={logout} className="text-xs text-white/70 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors border border-white/20">
             Salir

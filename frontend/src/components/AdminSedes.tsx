@@ -122,6 +122,7 @@ export default function AdminSedes() {
                 <thead>
                   <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
                     <TableTh className="text-white/80">Empresa</TableTh>
+                    <TableTh className="text-white/80">Ciudad</TableTh>
                     <TableTh className="text-white/80">Nombre</TableTh>
                     <TableTh className="text-white/80">Dirección</TableTh>
                     <TableTh className="text-white/80 text-center">Acciones</TableTh>
@@ -131,6 +132,7 @@ export default function AdminSedes() {
                   {items.map((i) => (
                     <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
                       <td className="px-5 py-2 text-xs text-gray-700">{empresaNombre(i.empresa_id)}</td>
+                      <td className="px-5 py-2 text-xs text-gray-500">{i.ciudad || '—'}</td>
                       <td className="px-5 py-2 text-xs font-semibold text-gray-800">{i.nombre}</td>
                       <td className="px-5 py-2 text-xs text-gray-500">{i.direccion || '—'}</td>
                       <td className="px-5 py-2 text-center">
