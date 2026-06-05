@@ -16,6 +16,8 @@ from reportlab.platypus.flowables import HRFlowable
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from PIL import Image as PILImage, ImageDraw
+from config_assets import LOGO_BASE64
+from reportlab.lib.utils import ImageReader
 
 
 def ahora_iso() -> str:
@@ -164,17 +166,17 @@ class ReportePDF:
         canvas.saveState()
         page_w, page_h = A4
 
-        logo_w = 30 * mm
+        logo_w = 27 * mm
         logo_h = 15 * mm
         
-        logo_x = 20 * mm 
+        logo_x = 22 * mm 
         logo_y = page_h - 28 * mm 
         canvas.setFillColor(COLOR_PRIMARY)
         canvas.rect(0, page_h - 31 * mm, page_w, 35 * mm, fill=1, stroke=0)
 
-        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public", "logo.png")
-        if os.path.exists(logo_path):
-            canvas.drawImage(logo_path, logo_x, logo_y, width=logo_w, height=logo_h, mask='auto')
+        logo_bytes = base64.b64decode(LOGO_BASE64)
+        img_logo = ImageReader(io.BytesIO(logo_bytes))
+        canvas.drawImage(img_logo, logo_x, logo_y, width=logo_w, height=logo_h, mask='auto')
 
         
         canvas.setFont(FONT_BOLD, 18)
