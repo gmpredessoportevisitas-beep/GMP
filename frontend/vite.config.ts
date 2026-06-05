@@ -8,7 +8,7 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
-      includeAssets: ['logo.png', 'favicon.svg'],
+      includeAssets: ['logo.png', 'favicon.svg', 'logo.svg'], 
       manifest: {
         name: 'GMP - Gestión de Mantenimiento',
         short_name: 'GMP',
@@ -20,6 +20,11 @@ export default defineConfig({
         start_url: '/',
         lang: 'es-CO',
         icons: [
+          {
+            src: 'logo.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
           {
             src: 'logo.png',
             sizes: '512x512',
