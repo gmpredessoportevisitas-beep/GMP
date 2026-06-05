@@ -10,7 +10,7 @@ import EmpresaIcon from '../assets/icons/empresas/EmpresaIcon';
 import SedesIcon from '../assets/icons/sedes/SedesIcon';
 import EncuestasIcon from '../assets/icons/encuestas/EncuestasIcon';
 import ReportesIcon from '../assets/icons/reportes/ReportesIcon';
-import logo from '../assets/logo.webp';
+import logo from '../assets/logo-white.svg';
 import type { Tab } from '../types';
 
 

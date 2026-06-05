@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import logo from '../assets/logo.webp';
+import logo from '../assets/logo-white.svg';
 
 interface LoginProps {
   errorInicial?: string;
@@ -30,7 +30,7 @@ export default function Login({ errorInicial = '' }: LoginProps) {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-700 via-primary-800 to-black p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full animate-fade-in border border-white/10">
         <div className='bg-black flex justify-center px-2 py-4 rounded-xl mb-8'>
-          <img src={logo} alt="Logo" className="w-32 mx-auto mb-4" />
+          <img src={logo} alt="Logo" className="w-40 self-center" />
         </div>
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-800 rounded-xl border border-red-200 text-sm flex items-start gap-3">

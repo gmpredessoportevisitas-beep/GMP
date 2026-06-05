@@ -32,8 +32,8 @@
       "dest": "frontend/favicon.svg"
     },
     {
-      "src": "/logo.webp",
-      "dest": "frontend/logo.webp"
+      "src": "/logo.svg",
+      "dest": "frontend/logo.svg"
     },
     {
       "src": "/manifest.webmanifest",

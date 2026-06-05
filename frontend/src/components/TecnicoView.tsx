@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import useTecnicoView, { VERSION_POLITICA } from '../hooks/useTecnicoView';
 import Combobox from './Combobox';
-import Logo from '../assets/logo.webp';
+import Logo from '../assets/logo-white.svg';
 
 const CW = 400;
 const CH = 150;
@@ -126,9 +126,9 @@ export default function TecnicoView() {
           <img
               src={Logo}
               alt="Logo"
-              className="w-16 h-10 object-contain"
+              className="w-16 h-10"
             />
-            <div className="flex flex-col justify-center">
+            <div className="flex flex-col justify-center w-full">
               <h1 className="text-lg font-semibold text-center">Reporte de Mantenimiento</h1>
               <p className="text-xs text-white/70 truncate max-w-[180px] sm:max-w-none text-center">{perfil?.nombre_completo}</p>
           </div>
