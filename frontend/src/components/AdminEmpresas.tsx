@@ -102,7 +102,6 @@ export default function AdminEmpresas() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
-                    <TableTh className="text-white/80">ID</TableTh>
                     <TableTh className="text-white/80">Nombre</TableTh>
                     <TableTh className="text-white/80">NIT</TableTh>
                     <TableTh className="text-white/80">Telefono</TableTh>
@@ -113,7 +112,6 @@ export default function AdminEmpresas() {
               <tbody className="divide-y divide-gray-100">
                 {items.map((i) => (
                   <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
-                    <td className="px-5 py-4 text-sm text-gray-400 font-mono">#{i.id}</td>
                     <td className="px-5 py-4 text-sm font-semibold text-gray-800">{i.nombre}</td>
                     <td className="px-5 py-4 text-sm text-gray-500">{i.nit || '—'}</td>
                     <td className="px-5 py-4 text-sm text-gray-500">{i.telefono || '—'}</td>

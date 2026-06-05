@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from config import supabase
 from schemas import ReporteCreate
 from deps import get_usuario_actual
-from utils import ahora_iso, generar_pdf_fpdf
+from utils import ahora_iso, generar_pdf_fpdf, fecha_local_a_utc
 
 router = APIRouter(prefix="/api", tags=["reportes"])
 
@@ -77,9 +77,9 @@ async def listar_reportes(
     if motivo_visita:
         q = q.eq("motivo_visita", motivo_visita)
     if fecha_inicio:
-        q = q.gte("fecha_hora", fecha_inicio)
+        q = q.gte("fecha_hora", fecha_local_a_utc(fecha_inicio, inicio=True))
     if fecha_fin:
-        q = q.lte("fecha_hora", f"{fecha_fin}T23:59:59")
+        q = q.lte("fecha_hora", fecha_local_a_utc(fecha_fin, inicio=False))
 
     result = q.range(offset, offset + limit - 1).execute()
     return {"items": result.data, "total": result.count}

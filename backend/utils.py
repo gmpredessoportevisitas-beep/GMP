@@ -24,6 +24,18 @@ def ahora_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def fecha_local_a_utc(fecha_str: str, inicio: bool = True, tz_offset: int = -5) -> str:
+    if not fecha_str:
+        return fecha_str
+    delta = timedelta(hours=abs(tz_offset))
+    dt = datetime.strptime(fecha_str, "%Y-%m-%d")
+    if inicio:
+        dt_local = dt.replace(hour=0, minute=0, second=0, tzinfo=timezone(-delta))
+    else:
+        dt_local = dt.replace(hour=23, minute=59, second=59, tzinfo=timezone(-delta))
+    return dt_local.astimezone(timezone.utc).isoformat()
+
+
 def format_fecha(iso: str, tz_offset: int = -5) -> str:
     if not iso:
         return "-"

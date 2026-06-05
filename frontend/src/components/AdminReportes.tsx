@@ -183,7 +183,6 @@ export default function AdminReportes() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
-                    <TableTh className="text-white/90">ID</TableTh>
                     <TableTh className="text-white/90">Fecha</TableTh>
                     <TableTh className="text-white/90">Empresa</TableTh>
                     <TableTh className="text-white/90">Sede</TableTh>
@@ -198,7 +197,6 @@ export default function AdminReportes() {
                 <tbody className="divide-y divide-gray-100">
                   {reportes.map(r => (
                     <tr key={r.id} className="hover:bg-orange-50/50 transition-colors">
-                      <td className="px-5 py-2 text-xs font-bold text-primary-800 font-mono">#{r.id}</td>
                       <td className="px-5 py-2 text-xs text-gray-600">{formatFecha(r.fecha_hora)}</td>
                       <td className="px-5 py-2 text-xs font-medium text-gray-600">{r.empresa_nombre || '—'}</td>
                       <td className="px-5 py-2 text-xs text-gray-600 ">{r.sede_nombre || '—'}</td>
@@ -273,7 +271,7 @@ export default function AdminReportes() {
                 <EncuestaIcon />
                 <div>
                   <h2 className="text-md font-bold text-gray-800">Encuesta de Satisfaccion</h2>
-                  <p className="text-xs text-gray-400">Reporte #{encuestaData.encuesta.reporte_id}</p>
+                  
                 </div>
               </div>
               <button onClick={cerrarEncuesta} className="p-2 hover:bg-gray-100 rounded-xl transition-colors">
