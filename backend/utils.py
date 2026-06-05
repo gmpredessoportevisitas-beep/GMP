@@ -172,7 +172,9 @@ class ReportePDF:
         canvas.setFillColor(COLOR_PRIMARY)
         canvas.rect(0, page_h - 31 * mm, page_w, 35 * mm, fill=1, stroke=0)
 
-        canvas.drawImage("./public/logo.png", logo_x, logo_y, width=logo_w, height=logo_h, mask='auto')
+        logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public", "logo.png")
+        if os.path.exists(logo_path):
+            canvas.drawImage(logo_path, logo_x, logo_y, width=logo_w, height=logo_h, mask='auto')
 
         
         canvas.setFont(FONT_BOLD, 18)
