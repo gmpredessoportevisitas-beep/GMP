@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Empresa, Sede, EncuestaPregunta } from '../types';
 
@@ -10,6 +10,7 @@ export default function useTecnicoView() {
 
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);
+  const [sedesLoading, setSedesLoading] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   const [empresaId, setEmpresaId] = useState('');
@@ -37,13 +38,11 @@ export default function useTecnicoView() {
   useEffect(() => {
     (async () => {
       const t = await getToken();
-      const [rE, rS, rP] = await Promise.all([
+      const [rE, rP] = await Promise.all([
         fetch(`${API}/api/catalogos/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`${API}/api/catalogos/sedes`, { headers: { Authorization: `Bearer ${t}` } }),
         fetch(`${API}/api/encuesta-preguntas`),
       ]);
       if (rE.ok) setEmpresas(await rE.json() as Empresa[]);
-      if (rS.ok) setSedes(await rS.json() as Sede[]);
       if (rP.ok) {
         const data = await rP.json() as EncuestaPregunta[];
         setPreguntas(data);
@@ -55,12 +54,31 @@ export default function useTecnicoView() {
     })();
   }, []);
 
-  const sedesFiltradas = empresaId
-    ? sedes.filter(s => s.empresa_id === parseInt(empresaId))
-    : [];
+  useEffect(() => {
+    if (!empresaId) { setSedes([]); setSedeId(''); return; }
+    (async () => {
+      setSedesLoading(true);
+      try {
+        const t = await getToken();
+        const rS = await fetch(`${API}/api/catalogos/sedes?empresa_id=${empresaId}`, {
+          headers: { Authorization: `Bearer ${t}` },
+        });
+        if (rS.ok) setSedes(await rS.json() as Sede[]);
+      } finally {
+        setSedesLoading(false);
+      }
+    })();
+  }, [empresaId, getToken]);
 
-  const empresaNombre = empresas.find(e => e.id === parseInt(empresaId))?.nombre || '';
-  const sedeNombre = sedes.find(s => s.id === parseInt(sedeId))?.nombre || '';
+  const empresaNombre = useMemo(
+    () => empresas.find(e => e.id === parseInt(empresaId))?.nombre || '',
+    [empresas, empresaId]
+  );
+
+  const sedeNombre = useMemo(
+    () => sedes.find(s => s.id === parseInt(sedeId))?.nombre || '',
+    [sedes, sedeId]
+  );
 
   const guardarReporte = useCallback(async () => {
     setLoading(true);
@@ -137,7 +155,7 @@ export default function useTecnicoView() {
   }, [preguntas]);
 
   return {
-    empresas, sedes, loaded,
+    empresas, sedes, sedesLoading, loaded,
     empresaId, setEmpresaId,
     sedeId, setSedeId,
     nombreAsesor, setNombreAsesor,
@@ -152,7 +170,7 @@ export default function useTecnicoView() {
     encuestaObservaciones, setEncuestaObservaciones,
     loading, descargando, guardado, setGuardado,
     msg, setMsg,
-    sedesFiltradas, empresaNombre, sedeNombre,
+    empresaNombre, sedeNombre,
     guardarReporte, descargarPDF, resetForm, perfil, logout,
     aceptoPrivacidad, setAceptoPrivacidad,
   };

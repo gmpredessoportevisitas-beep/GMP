@@ -1,5 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import useTecnicoView, { VERSION_POLITICA } from '../hooks/useTecnicoView';
+import Combobox from './Combobox';
+import Logo from '../assets/logo.webp';
 
 const CW = 400;
 const CH = 150;
@@ -11,7 +13,7 @@ interface Point {
 
 export default function TecnicoView() {
   const {
-    empresas, loaded,
+    empresas, sedes, sedesLoading, loaded,
     empresaId, setEmpresaId,
     sedeId, setSedeId,
     nombreAsesor, setNombreAsesor,
@@ -26,7 +28,7 @@ export default function TecnicoView() {
     encuestaObservaciones, setEncuestaObservaciones,
     loading, descargando, guardado, setGuardado,
     msg,
-    sedesFiltradas, empresaNombre, sedeNombre,
+    empresaNombre, sedeNombre,
     guardarReporte, descargarPDF, resetForm, perfil, logout,
     aceptoPrivacidad, setAceptoPrivacidad,
   } = useTecnicoView();
@@ -117,21 +119,18 @@ export default function TecnicoView() {
     trazosRef.current = []; trazoRef.current = [];
     setFirmaSvg(''); setTocado(false);
   }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-primary-700 to-primary-500 text-white shadow-lg sticky top-0 z-30">
+    <div className="min-h-screen bg-gray-100">
+      <header className="bg-gradient-to-r from-gray-950 to-gray-800 text-white shadow-lg sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-white/15 rounded-xl flex items-center justify-center">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-lg font-bold">Reporte de Mantenimiento</h1>
-              <p className="text-xs text-white/70 truncate max-w-[180px] sm:max-w-none">{perfil?.nombre_completo}</p>
-            </div>
+          <img
+              src={Logo}
+              alt="Logo"
+              className="w-16 h-10 object-contain"
+            />
+            <div className="flex flex-col justify-center">
+              <h1 className="text-lg font-semibold text-center">Reporte de Mantenimiento</h1>
+              <p className="text-xs text-white/70 truncate max-w-[180px] sm:max-w-none text-center">{perfil?.nombre_completo}</p>
           </div>
           <button onClick={logout} className="text-xs text-white/70 hover:text-white px-3 py-1.5 rounded-lg hover:bg-white/10 transition-colors border border-white/20">
             Salir
@@ -209,12 +208,15 @@ export default function TecnicoView() {
                     </svg>
                     Sede / Punto de Trabajo <span className="text-red-500">*</span>
                   </label>
-                  <select value={sedeId} onChange={e => setSedeId(e.target.value)}
-                    required disabled={!empresaId}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-white disabled:bg-gray-100 disabled:text-gray-400 transition-shadow">
-                    <option value="">{empresaId ? 'Seleccionar sede...' : 'Primero selecciona una empresa'}</option>
-                    {sedesFiltradas.map(s => <option key={s.id} value={s.id}>{s.nombre} {s.ciudad ? `(${s.ciudad})` : ''}</option>)}
-                  </select>
+                  <Combobox
+                    options={sedes.map(s => ({ value: String(s.id), label: s.nombre, sublabel: s.direccion}))}
+                    value={sedeId}
+                    onChange={setSedeId}
+                    placeholder={empresaId ? 'Buscar sede...' : 'Primero selecciona una empresa'}
+                    disabled={!empresaId}
+                    loading={sedesLoading}
+                    emptyMessage="No se encontraron sedes"
+                  />
                 </div>
 
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -227,24 +229,6 @@ export default function TecnicoView() {
                   <input type="text" value={perfil?.nombre_completo || ''} disabled
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 outline-none" />
                 </div>
-
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
-                    <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Asesor
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <input type="text" value={nombreAsesor} onChange={e => setNombreAsesor(e.target.value)}
-                      placeholder="Nombre del asesor" maxLength={255}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white transition-shadow" />
-                    <input type="text" value={telefonoAsesor} onChange={e => setTelefonoAsesor(e.target.value)}
-                      placeholder="Telefono del asesor" maxLength={50}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white transition-shadow" />
-                  </div>
-                </div>
-
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,7 +258,7 @@ export default function TecnicoView() {
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                     </svg>
-                    Se utilizaron materiales / repuestos
+                    Se Utilizaron Materiales / Repuestos
                   </label>
                   {usoMateriales && (
                     <textarea value={materialesDetalle} onChange={e => setMaterialesDetalle(e.target.value)}
@@ -298,14 +282,43 @@ export default function TecnicoView() {
                     {!hallazgos && <span />}
                   </div>
                 </div>
-
+                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2">
+                    <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Asesor
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input type="text" value={nombreAsesor} onChange={e => setNombreAsesor(e.target.value)}
+                      placeholder="Nombre del asesor" maxLength={255}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white transition-shadow" />
+                    <input type="text" value={telefonoAsesor} onChange={e => setTelefonoAsesor(e.target.value)}
+                      placeholder="Telefono del asesor" maxLength={50}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white transition-shadow" />
+                  </div>
+                </div>
+                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" checked={aceptoPrivacidad}
+                      onChange={e => setAceptoPrivacidad(e.target.checked)}
+                      className="w-5 h-5 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer flex-shrink-0" />
+                    <div className="text-xs text-gray-500 leading-relaxed">
+                      <span className="text-gray-700 font-semibold">Autorizacion de Tratamiento de Datos Personales <span className="text-red-500">*</span></span><br />
+                      De conformidad con la Ley 1581 de 2012, autorizo de manera voluntaria, previa, explicita e informada el tratamiento de mis datos personales para fines internos de control de calidad, evaluación del servicio brindado y como constancia técnica del trabajo realizado.{' '}
+                      <button type="button" onClick={() => setPrivacyOpen(true)}
+                        className="text-primary-600 underline hover:text-primary-700 font-medium">
+                        Ver Politica Completa
+                      </button>
+                    </div>
+                  </label>
+                </div>
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                   <div className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                    <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
                     </svg>
                     Encuesta de Satisfaccion
-                    <span className="text-xs font-normal text-gray-400 ml-1">(Opcional)</span>
                   </div>
                   {preguntas.map((p, idx) => (
                     <div key={p.id} className="mb-3 pb-3 border-b border-gray-100 last:border-0 last:pb-0 last:mb-0">
@@ -333,7 +346,6 @@ export default function TecnicoView() {
                     rows={2} maxLength={2000} placeholder="Observaciones adicionales de la encuesta (opcional)..."
                     className="mt-2 w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none bg-gray-50 focus:bg-white resize-none transition-shadow text-sm" />
                 </div>
-
                 <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                   <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
                     <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -357,23 +369,6 @@ export default function TecnicoView() {
                     </button>
                   )}
                 </div>
-
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input type="checkbox" checked={aceptoPrivacidad}
-                      onChange={e => setAceptoPrivacidad(e.target.checked)}
-                      className="w-5 h-5 mt-0.5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer flex-shrink-0" />
-                    <div className="text-xs text-gray-500 leading-relaxed">
-                      <span className="text-gray-700 font-semibold">Autorizacion de Tratamiento de Datos Personales <span className="text-red-500">*</span></span><br />
-                      De conformidad con la Ley 1581 de 2012, autorizo de manera voluntaria, previa, explicita e informada el tratamiento de mis datos personales para los fines del servicio de mantenimiento preventivo.{' '}
-                      <button type="button" onClick={() => setPrivacyOpen(true)}
-                        className="text-primary-600 underline hover:text-primary-700 font-medium">
-                        Ver Politica Completa
-                      </button>
-                    </div>
-                  </label>
-                </div>
-
                 <div className="w-full flex justify-center">
                   <button type="submit" disabled={loading || !empresaId || !sedeId || !aceptoPrivacidad}
                     className={`py-4 px-4 rounded-xl font-semibold text-white transition-all active:scale-[0.97] flex items-center justify-center gap-2 shadow-md ${

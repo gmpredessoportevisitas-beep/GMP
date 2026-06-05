@@ -25,7 +25,7 @@ export default function Pagination({ pagina, total, limit, onChange }: Paginatio
         Anterior
       </button>
       <span className="text-sm text-gray-600">
-        Mostrando <span className="font-semibold text-gray-800">{desde}</span>-<span className="font-semibold text-gray-800">{hasta}</span> de <span className="font-semibold text-primary-600">{total}</span>
+      <span className="font-semibold text-gray-800">{desde}</span>-<span className="font-semibold text-gray-800">{hasta}</span> de <span className="font-semibold text-primary-600">{total}</span>
       </span>
       <button
         onClick={() => onChange(pagina + 1)}

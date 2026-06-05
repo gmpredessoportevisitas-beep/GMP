@@ -88,7 +88,7 @@ async def listar_reportes(
 @router.get("/reportes/{reporte_id}/pdf")
 async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actual)):
     result = (supabase.table("reportes")
-              .select("*, empresas(nombre), sedes(nombre), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
+              .select("*, empresas(nombre), sedes(nombre, direccion), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
               .eq("id", reporte_id)
               .execute())
     if not result.data:
@@ -99,12 +99,14 @@ async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actua
         raise HTTPException(403, "No tienes permiso para ver este reporte.")
 
     empresa_nombre = r.get("empresas", {}).get("nombre", "-") if isinstance(r.get("empresas"), dict) else "-"
-    sede_nombre = r.get("sedes", {}).get("nombre", "-") if isinstance(r.get("sedes"), dict) else "-"
+    sede_data = r.get("sedes", {}) if isinstance(r.get("sedes"), dict) else {}
+    sede_nombre = sede_data.get("nombre", "-")
+    sede_direccion = sede_data.get("direccion", "")
     perfil = r.get("perfiles", {}) if isinstance(r.get("perfiles"), dict) else {}
     tecnico_nombre = perfil.get("nombre_completo", "-")
     tecnico_email = perfil.get("email", "-")
 
-    buf = generar_pdf_fpdf(r, empresa_nombre, sede_nombre, tecnico_nombre, tecnico_email)
+    buf = generar_pdf_fpdf(r, empresa_nombre, sede_nombre, sede_direccion, tecnico_nombre, tecnico_email)
 
     filename = f"reporte_{reporte_id}.pdf"
     return StreamingResponse(buf, media_type="application/pdf",
@@ -114,7 +116,7 @@ async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actua
 @router.get("/reportes/{reporte_id}/preview-pdf")
 async def previsualizar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actual)):
     result = (supabase.table("reportes")
-              .select("*, empresas(nombre), sedes(nombre), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
+              .select("*, empresas(nombre), sedes(nombre, direccion), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
               .eq("id", reporte_id)
               .execute())
     if not result.data:
@@ -125,12 +127,14 @@ async def previsualizar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario
         raise HTTPException(403, "No tienes permiso para ver este reporte.")
 
     empresa_nombre = r.get("empresas", {}).get("nombre", "-") if isinstance(r.get("empresas"), dict) else "-"
-    sede_nombre = r.get("sedes", {}).get("nombre", "-") if isinstance(r.get("sedes"), dict) else "-"
+    sede_data = r.get("sedes", {}) if isinstance(r.get("sedes"), dict) else {}
+    sede_nombre = sede_data.get("nombre", "-")
+    sede_direccion = sede_data.get("direccion", "")
     perfil = r.get("perfiles", {}) if isinstance(r.get("perfiles"), dict) else {}
     tecnico_nombre = perfil.get("nombre_completo", "-")
     tecnico_email = perfil.get("email", "-")
 
-    buf = generar_pdf_fpdf(r, empresa_nombre, sede_nombre, tecnico_nombre, tecnico_email)
+    buf = generar_pdf_fpdf(r, empresa_nombre, sede_nombre, sede_direccion, tecnico_nombre, tecnico_email)
     return StreamingResponse(buf, media_type="application/pdf",
                              headers={"Content-Disposition": "inline"})
 

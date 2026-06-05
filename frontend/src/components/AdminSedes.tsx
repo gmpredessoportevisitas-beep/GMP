@@ -130,10 +130,10 @@ export default function AdminSedes() {
                 <tbody className="divide-y divide-gray-100 overflow-scroll">
                   {items.map((i) => (
                     <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
-                      <td className="px-5 py-4 text-xs text-gray-700">{empresaNombre(i.empresa_id)}</td>
-                      <td className="px-5 py-4 text-xs font-semibold text-gray-800">{i.nombre}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{i.direccion || '—'}</td>
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-5 py-2 text-xs text-gray-700">{empresaNombre(i.empresa_id)}</td>
+                      <td className="px-5 py-2 text-xs font-semibold text-gray-800">{i.nombre}</td>
+                      <td className="px-5 py-2 text-xs text-gray-500">{i.direccion || '—'}</td>
+                      <td className="px-5 py-2 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => editar(i)}
                             className="py-1.5 px-3 text-xs font-semibold text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-lg transition-all">Editar</button>

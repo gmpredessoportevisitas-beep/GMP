@@ -14,7 +14,7 @@ async def catalogos_empresas(usuario: dict = Depends(get_usuario_actual)):
 
 @router.get("/sedes")
 async def catalogos_sedes(empresa_id: Optional[int] = None, usuario: dict = Depends(get_usuario_actual)):
-    q = supabase.table("sedes").select("id, nombre, ciudad, empresa_id").order("nombre")
+    q = supabase.table("sedes").select("id, nombre, ciudad, empresa_id, direccion").order("nombre")
     if empresa_id:
         q = q.eq("empresa_id", empresa_id)
     return q.execute().data

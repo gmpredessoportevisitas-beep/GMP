@@ -26,6 +26,8 @@ export default function useAdminReportes() {
   const [filterMotivo, setFilterMotivo] = useState<string | null>(null);
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
+  const [loadingFilters, setLoadingFilters] = useState(true);
+  const [loadingEncuesta, setLoadingEncuesta] = useState<number | null>(null);
 
   const debouncedSearch = useDebounce(searchTerm, 300);
 
@@ -58,6 +60,7 @@ export default function useAdminReportes() {
   useEffect(() => { cargar(); }, [cargar]);
 
   const cargarFiltros = useCallback(async () => {
+    setLoadingFilters(true);
     try {
       const t = await getToken();
       const [rTec, rEmp] = await Promise.all([
@@ -68,6 +71,8 @@ export default function useAdminReportes() {
       if (rEmp.ok) setEmpresas(await rEmp.json() as Empresa[]);
     } catch {
       setMsg({ tipo: 'error', texto: 'Error al cargar filtros' });
+    } finally {
+      setLoadingFilters(false);
     }
   }, [getToken]);
 
@@ -122,6 +127,7 @@ export default function useAdminReportes() {
 
   const verEncuesta = useCallback(async (reporteId: number) => {
     setEncuestaData(null);
+    setLoadingEncuesta(reporteId);
     setMsg({ tipo: '', texto: '' });
     try {
       const t = await getToken();
@@ -136,6 +142,8 @@ export default function useAdminReportes() {
       }
     } catch (err) {
       setMsg({ tipo: 'error', texto: (err as Error).message });
+    } finally {
+      setLoadingEncuesta(null);
     }
   }, [getToken]);
 
@@ -173,8 +181,8 @@ export default function useAdminReportes() {
   const setMsgAction = useCallback((m: { tipo: string; texto: string }) => setMsg(m), []);
 
   return {
-    reportes, totalReportes, loading, error, pagina, setPagina,
-    descargando, previewUrl, previewLoadingId,
+    reportes, totalReportes, loading, error, pagina, setPagina, loadingFilters,
+    descargando, previewUrl, previewLoadingId, loadingEncuesta,
     msg, encuestaData,
     cargar, descargarPDF, previsualizar, cerrarPreview,
     verEncuesta, cerrarEncuesta, exportarCSV, setMsg: setMsgAction,

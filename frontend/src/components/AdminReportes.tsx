@@ -5,6 +5,9 @@ import FilterChips from './FilterChips';
 import Pagination from './Pagination';
 import TableTh from './TableTh';
 import PageHeader from './PageHeader';
+import PreviewIcon from '../assets/icons/reportes/PreviewIcon';
+import PdfIcon from '../assets/icons/reportes/PdfIcon';
+import EncuestaIcon from '../assets/icons/reportes/EncuestaIcon';
 
 const MOTIVOS = [
   { key: 'soporte', label: 'Soporte' },
@@ -16,7 +19,7 @@ const MOTIVOS = [
 
 export default function AdminReportes() {
   const {
-    reportes, totalReportes, loading, error, pagina, setPagina,
+    reportes, totalReportes, loading, error, pagina, setPagina, loadingFilters, loadingEncuesta,
     descargando, previewUrl, previewLoadingId,
     msg, encuestaData,
     cargar, descargarPDF, previsualizar, cerrarPreview,
@@ -32,7 +35,7 @@ export default function AdminReportes() {
 
   function formatFecha(iso: string) {
     if (!iso) return '';
-    try { return new Date(iso).toLocaleString('es-CO', { year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:true }); }
+    try { return new Date(iso).toLocaleString('es-CO', { year:'numeric',month:'2-digit',day:'2-digit',hour12:true }); }
     catch { return iso; }
   }
 
@@ -55,32 +58,39 @@ export default function AdminReportes() {
         // }
       />
       <div className="flex flex-col gap-2 sm:flex-row w-full justify-between">
-        <div className="space-y-1 sm:w-1/2 w-full sm:px-0 px-2">
-          {empresas.length > 0 && (
+        {loadingFilters ? (
+            <div className="flex justify-center items-center h-[6.3rem]">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600"></div>
+              <span className="text-sm text-gray-400 ml-4">Cargando filtros...</span>
+            </div>
+          ) : (
+          <div className="space-y-1 sm:w-1/2 w-full sm:px-0 px-2">
+            {empresas.length > 0 && (
+              <div className="flex flex-col items-start gap-1 flex-wrap">
+                <span className="text-xs font-semibold text-gray-500">Empresa:</span>
+                <FilterChips
+                  chips={[
+                    { key: 'all', label: 'Todas', active: filterEmpresaId === null },
+                    ...empresas.map(e => ({ key: String(e.id), label: e.nombre, active: filterEmpresaId === e.id }))
+                  ]}
+                  onToggle={(key) => {
+                    setFilterEmpresaId(key === 'all' ? null : Number(key));
+                  }}
+                />
+              </div>
+            )}
             <div className="flex flex-col items-start gap-1 flex-wrap">
-              <span className="text-xs font-semibold text-gray-500">Empresa:</span>
+              <span className="text-xs font-semibold text-gray-500">Motivo:</span>
               <FilterChips
                 chips={[
-                  { key: 'all', label: 'Todas', active: filterEmpresaId === null },
-                  ...empresas.map(e => ({ key: String(e.id), label: e.nombre, active: filterEmpresaId === e.id }))
+                  { key: 'all', label: 'Todos', active: filterMotivo === null },
+                  ...MOTIVOS.map(m => ({ key: m.key, label: m.label, active: filterMotivo === m.key }))
                 ]}
-                onToggle={(key) => {
-                  setFilterEmpresaId(key === 'all' ? null : Number(key));
-                }}
+                onToggle={(key) => setFilterMotivo(key === 'all' ? null : key)}
               />
             </div>
-          )}
-          <div className="flex flex-col items-start gap-1 flex-wrap">
-            <span className="text-xs font-semibold text-gray-500">Motivo:</span>
-            <FilterChips
-              chips={[
-                { key: 'all', label: 'Todos', active: filterMotivo === null },
-                ...MOTIVOS.map(m => ({ key: m.key, label: m.label, active: filterMotivo === m.key }))
-              ]}
-              onToggle={(key) => setFilterMotivo(key === 'all' ? null : key)}
-            />
           </div>
-        </div>
+        )}
         <div className="flex flex-col items-start justify-start gap-1 w-full sm:items-end sm:w-1/2">
           {tecnicos.length > 0 && (
             <div className="flex flex-col sm:px-0 px-10 w-full sm:w-auto gap-1">
@@ -168,58 +178,53 @@ export default function AdminReportes() {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-x-auto w-full sm:max-h-[calc(100vh-25rem)] max-h-[calc(100vh-14rem)] mt-2">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-100 overflow-x-auto w-full sm:max-h-[calc(100vh-25rem)] max-h-[calc(100vh-14rem)] mt-2">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="bg-gradient-to-r from-primary-600 to-primary-700">
-                    <TableTh className="text-white/80">ID</TableTh>
-                    <TableTh className="text-white/80">Fecha</TableTh>
-                    <TableTh className="text-white/80">Empresa</TableTh>
-                    <TableTh className="text-white/80">Sede</TableTh>
-                    <TableTh className="text-white/80">Tecnico</TableTh>
-                    <TableTh className="text-white/80">Motivo</TableTh>
-                    <TableTh className="text-white/80">Asesor</TableTh>
-                    <TableTh className="text-white/80">Hallazgos</TableTh>
-                    <TableTh className="text-white/80 text-center">PDF/Enc.</TableTh>
+                    <TableTh className="text-white/90">ID</TableTh>
+                    <TableTh className="text-white/90">Fecha</TableTh>
+                    <TableTh className="text-white/90">Empresa</TableTh>
+                    <TableTh className="text-white/90">Sede</TableTh>
+                    <TableTh className="text-white/90">Tecnico</TableTh>
+                    <TableTh className="text-white/90">Motivo</TableTh>
+                    <TableTh className="text-white/90">Asesor</TableTh>
+                    <TableTh className="text-white/90">Hallazgos</TableTh>
+                    <TableTh className="text-white/90">Materiales</TableTh>
+                    <TableTh className="text-white/90 text-center">Acciones</TableTh>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {reportes.map(r => (
                     <tr key={r.id} className="hover:bg-orange-50/50 transition-colors">
-                      <td className="px-5 py-4 text-xs font-bold text-primary-600 font-mono">#{r.id}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500 whitespace-nowrap">{formatFecha(r.fecha_hora)}</td>
-                      <td className="px-5 py-4 text-xs font-medium text-gray-700">{r.empresa_nombre || '—'}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{r.sede_nombre || '—'}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{r.tecnico_nombre || '—'}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{r.motivo_visita || '—'}</td>
-                      <td className="px-5 py-4 text-xs text-gray-500">{r.nombre_asesor || '—'}</td>
-                      <td className="px-5 py-4 text-xs text-gray-400 max-w-[220px] truncate">{r.hallazgos || '—'}</td>
-                      <td className="px-5 py-4 text-center">
+                      <td className="px-5 py-2 text-xs font-bold text-primary-800 font-mono">#{r.id}</td>
+                      <td className="px-5 py-2 text-xs text-gray-600">{formatFecha(r.fecha_hora)}</td>
+                      <td className="px-5 py-2 text-xs font-medium text-gray-600">{r.empresa_nombre || '—'}</td>
+                      <td className="px-5 py-2 text-xs text-gray-600 ">{r.sede_nombre || '—'}</td>
+                      <td className="px-5 py-2 text-xs font-medium text-gray-600">{r.tecnico_nombre || '—'}</td>
+                      <td className="px-5 py-2 text-xs text-gray-600 capitalize">{r.motivo_visita || '—'}</td>
+                      <td className="px-5 py-2 text-xs text-gray-600 capitalize">{r.nombre_asesor || '—'}</td>
+                      <td className="px-5 py-2 text-xs text-gray-600 max-w-[220px] truncate">{r.hallazgos || '—'}</td>
+                      <td className="px-5 py-2 text-xs text-gray-600 max-w-[220px] truncate">{r.  materiales_detalle || '—'}</td>
+                      <td className="px-5 py-2 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => previsualizar(r.id)} 
-                            className="p-2 rounded-xl transition-all hover:bg-orange-50">
+                          <button onClick={() => previsualizar(r.id)} title='Ver reporte'
+                            className="w-9 h-9 flex items-center justify-center rounded-xl transition-all text-white hover:bg-[#29524A]/90 cursor-pointer bg-[#29524A]">
                             {previewLoadingId === r.id ? (
-                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent" />
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
                             ) : (
-                              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                              </svg>
+                              <PreviewIcon />
                             )}
                           </button>
                           {previewUrl && (
                             <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2 md:p-6 animate-fade-in" onClick={cerrarPreview}>
                               <div className="bg-white rounded-2xl w-full max-w-4xl h-[94vh] md:h-[90vh] flex flex-col shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-                                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
+                                <div className="flex items-center justify-between px-5 py-2 border-b border-gray-200 bg-white">
                                   <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
-                                      <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                      </svg>
-                                    </div>
+                                    <PdfIcon />
                                     <div>
-                                      <h2 className="text-lg font-bold text-gray-800">Vista Previa del Reporte</h2>
+                                      <h2 className="text-md font-semibold text-gray-800">Vista Previa del Reporte</h2>
                                     </div>
                                   </div>
                                   <button onClick={cerrarPreview} className="p-2 hover:bg-gray-100 rounded-xl transition-colors" aria-label="Cerrar">
@@ -234,27 +239,21 @@ export default function AdminReportes() {
                               </div>
                             </div>
                           )}
-                          <button onClick={() => descargarPDF(r.id)} disabled={descargando === r.id}
-                            className={`inline-flex items-center gap-1.5 py-2 px-2 rounded-xl text-xs font-bold transition-all ${
-                              descargando === r.id
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                : 'bg-primary-600 text-white hover:bg-primary-700 shadow-sm'
-                            }`}>
+                          <button onClick={() => descargarPDF(r.id)} disabled={descargando === r.id} title="Descargar PDF"
+                            className="w-9 h-9 flex items-center justify-center rounded-xl transition-all text-white hover:bg-primary-700 cursor-pointer bg-primary-600">
                             {descargando === r.id ? (
-                              <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-gray-400 border-t-transparent" />
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
                             ) : (
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                              </svg>
+                              <PdfIcon />
                             )}
-                            {descargando === r.id ? '' : 'PDF'}
                           </button>
-                          <button onClick={() => verEncuesta(r.id)}
+                          <button onClick={() => verEncuesta(r.id)} disabled={loadingEncuesta === r.id} title="Ver encuesta"
                             className="inline-flex items-center gap-1 py-2 px-2 rounded-xl text-xs font-bold transition-all bg-amber-500 text-white hover:bg-amber-600 shadow-sm">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                            </svg>
-                            Enc.
+                              {loadingEncuesta === r.id ? (
+                                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                              ) : (
+                                <EncuestaIcon />
+                              )}
                           </button>
                         </div>
                       </td>
@@ -271,13 +270,9 @@ export default function AdminReportes() {
           <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gradient-to-r from-amber-50 to-white">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-                  </svg>
-                </div>
+                <EncuestaIcon />
                 <div>
-                  <h2 className="text-lg font-bold text-gray-800">Encuesta de Satisfaccion</h2>
+                  <h2 className="text-md font-bold text-gray-800">Encuesta de Satisfaccion</h2>
                   <p className="text-xs text-gray-400">Reporte #{encuestaData.encuesta.reporte_id}</p>
                 </div>
               </div>

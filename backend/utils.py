@@ -1,13 +1,21 @@
 import io
 import re
 import base64
-import tempfile
 import os
-from datetime import datetime, timezone, timedelta  
+from datetime import datetime, timezone, timedelta
 from typing import Optional
 
-from fpdf import FPDF
-from PIL import Image, ImageDraw
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
+from reportlab.lib.units import mm
+from reportlab.lib import colors as rl_colors
+from reportlab.platypus import (SimpleDocTemplate, Paragraph, Table, TableStyle,
+                                 Image, Spacer)
+from reportlab.platypus.flowables import HRFlowable
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from PIL import Image as PILImage, ImageDraw
 
 
 def ahora_iso() -> str:
@@ -33,7 +41,7 @@ def svg_paths_a_png(svg_string: str, width: int = 400, height: int = 150) -> str
     paths = _extraer_paths(svg_string)
     if not paths:
         return ""
-    img = Image.new("RGB", (width, height), "white")
+    img = PILImage.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(img)
     for d in paths:
         _dibujar_path(draw, d)
@@ -50,7 +58,7 @@ def svg_paths_a_png_bytes(svg_string: str, width: int = 400, height: int = 150) 
     paths = _extraer_paths(svg_string)
     if not paths:
         return None
-    img = Image.new("RGB", (width, height), "white")
+    img = PILImage.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(img)
     for d in paths:
         _dibujar_path(draw, d)
@@ -94,153 +102,322 @@ def _dibujar_path(draw: ImageDraw.ImageDraw, d: str) -> None:
             i += 2
 
 
-class ReportePDF(FPDF):
-    def __init__(self, reporte: dict, empresa: str, sede: str, tecnico: str, email_tec: str):
-        super().__init__(orientation="P", unit="mm", format="A4")
+_FONTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fonts")
+FONT_REGULAR = "Helvetica"
+FONT_BOLD = "Helvetica-Bold"
+FONT_ITALIC = "Helvetica-Oblique"
+_UNICODE_AVAILABLE = False
+
+_ttf_regular = os.path.join(_FONTS_DIR, "DejaVuSans.ttf")
+_ttf_bold = os.path.join(_FONTS_DIR, "DejaVuSans-Bold.ttf")
+if os.path.exists(_ttf_regular):
+    try:
+        pdfmetrics.registerFont(TTFont("DejaVuSans", _ttf_regular))
+        if os.path.exists(_ttf_bold):
+            pdfmetrics.registerFont(TTFont("DejaVuSansBold", _ttf_bold))
+        else:
+            pdfmetrics.registerFont(TTFont("DejaVuSansBold", _ttf_regular))
+        FONT_REGULAR = "DejaVuSans"
+        FONT_BOLD = "DejaVuSansBold"
+        FONT_ITALIC = "DejaVuSans"
+        _UNICODE_AVAILABLE = True
+    except Exception:
+        pass
+
+COLOR_PRIMARY = rl_colors.HexColor("#131313")
+COLOR_SECONDARY = rl_colors.HexColor("#D1D5DB")
+COLOR_FOOTER = rl_colors.HexColor("#969696")
+COLOR_GRID = rl_colors.Color(0.85, 0.85, 0.85)
+COLOR_WHITE = rl_colors.white
+
+VERSION = "1.0"
+
+
+def _ascii_safe(text: str) -> str:
+    if _UNICODE_AVAILABLE:
+        return text
+    return text.encode("ascii", "ignore").decode("ascii")
+
+
+class ReportePDF:
+    def __init__(self, buf: io.BytesIO, reporte: dict, empresa: str,
+                 sede: str, sede_direccion: str, tecnico: str, email_tec: str):
         self.reporte = reporte
         self.empresa = empresa
         self.sede = sede
+        self.sede_direccion = sede_direccion
         self.tecnico = tecnico
         self.email_tec = email_tec
-        self.COLOR_PRIMARIO = (254, 101, 1)
-        self.COLOR_FONDO = (255, 238, 224)
-        self.COLOR_BORDE = (220, 220, 220)
-        self.COLOR_TEXTO = (0, 0, 0)
-        self.set_auto_page_break(auto=True, margin=20)
 
-    def header(self):
-        self.set_font("Helvetica", "B", 18)
-        self.set_text_color(*self.COLOR_PRIMARIO)
-        self.cell(0, 10, "Reporte de Visitas", align="C", new_x="LMARGIN", new_y="NEXT")
-        self.set_font("Helvetica", "", 9)
-        self.set_text_color(100, 100, 100)
-        self.cell(0, 6, "Sistema GMP - Reporte de Visitas", align="C", new_x="LMARGIN", new_y="NEXT")
-        self.set_draw_color(*self.COLOR_PRIMARIO)
-        self.set_line_width(0.6)
-        self.line(self.l_margin, self.get_y() + 1, self.w - self.r_margin, self.get_y() + 1)
-        self.ln(8)
+        self.doc = SimpleDocTemplate(
+            buf,
+            pagesize=A4,
+            leftMargin=20 * mm,
+            rightMargin=20 * mm,
+            topMargin=33 * mm,
+            bottomMargin=25 * mm,
+            title=f"Reporte {reporte.get('id', '')}",
+            author="GMP Redes",
+        )
 
-    def footer(self):
-        self.set_y(-15)
-        self.set_font("Helvetica", "", 7)
-        self.set_text_color(150, 150, 150)
+    def _header_footer(self, canvas, doc):
+        canvas.saveState()
+        page_w, page_h = A4
+
+        logo_w = 30 * mm
+        logo_h = 15 * mm
+        
+        logo_x = 20 * mm 
+        logo_y = page_h - 28 * mm 
+        canvas.setFillColor(COLOR_PRIMARY)
+        canvas.rect(0, page_h - 31 * mm, page_w, 35 * mm, fill=1, stroke=0)
+
+        canvas.drawImage("./public/logo.png", logo_x, logo_y, width=logo_w, height=logo_h, mask='auto')
+
+        
+        canvas.setFont(FONT_BOLD, 18)
+        canvas.setFillColor(COLOR_WHITE)
+        canvas.drawCentredString(page_w / 2, page_h - 23 * mm, "Reporte de Visitas")
+
+        canvas.setFont(FONT_REGULAR, 9)
+        canvas.setFillColor(COLOR_SECONDARY)
+        canvas.drawCentredString(page_w / 2, page_h - 29 * mm,
+                                 "Sistema de Gestión - Proceso de Gestión Humana")
+
+        alto_footer = 20 * mm 
+        canvas.setFillColor(COLOR_PRIMARY)
+        canvas.rect(0, 0, page_w, alto_footer, fill=1, stroke=0)
+
         ahora = datetime.now(timezone.utc)
         fecha_gen = format_fecha(ahora.isoformat())
-        self.cell(0, 10, f"Documento generado el {fecha_gen}    |    GMP \u00a9 {ahora.year}    |    Pagina {self.page_no()}/{{nb}}", align="C")
+        canvas.setFont(FONT_REGULAR, 7)
+        canvas.setFillColor(COLOR_WHITE) 
+        footer_texto = f"Documento generado el {fecha_gen}    |    GMP Redes \u00a9 {ahora.year}    |    Página {doc.page}    |    v{VERSION}"
+        y_texto_footer = (alto_footer / 2) - 1 * mm 
+        canvas.drawCentredString(page_w / 2, y_texto_footer, footer_texto)
+        canvas.restoreState()
 
-    def seccion_titulo(self, titulo: str):
-        self.set_font("Helvetica", "B", 11)
-        self.set_text_color(*self.COLOR_PRIMARIO)
-        self.cell(0, 8, titulo, new_x="LMARGIN", new_y="NEXT")
-        self.set_draw_color(254, 180, 100)
-        self.set_line_width(0.5)
-        y = self.get_y()
-        self.line(self.l_margin, y, self.w - self.r_margin, y)
-        self.ln(5)
-
-    def tabla_info(self):
-        self.seccion_titulo("Informacion General")
-        cols = (35, 60, 35, 60)
-        motivo = self.reporte.get("motivo_visita", "").capitalize() or "-"
-        if self.reporte.get("motivo_visita") == "otro" and self.reporte.get("motivo_visita_otro", "").strip():
-            motivo = f"Otro: {self.reporte.get('motivo_visita_otro')}"
-            motivo = motivo.encode('ascii', 'ignore').decode('ascii')
-        materiales = "Si" if self.reporte.get("uso_materiales") else "No"
-        nombre_asesor = self.reporte.get("nombre_asesor", "-").encode('ascii', 'ignore').decode('ascii')
-        telefono_asesor = self.reporte.get("telefono_asesor", "-").encode('ascii', 'ignore').decode('ascii')
-        datos = [
-            ("ID Reporte", str(self.reporte.get("id", "-")), "Fecha y Hora", format_fecha(self.reporte.get("fecha_hora", ""))),
-            ("Empresa", self.empresa, "Sede / Punto", self.sede),
-            ("Tecnico", self.tecnico, "Email Tecnico", self.email_tec),
-            ("Asesor", nombre_asesor, "Tel. Asesor", telefono_asesor),
-            ("Motivo Visita", motivo, "Uso Materiales", materiales),
+    def _section_title(self, title: str):
+        return [
+            Paragraph(title, ParagraphStyle(
+                "SectionTitle", fontName=FONT_BOLD, fontSize=11,
+                textColor=COLOR_PRIMARY, spaceBefore=0, spaceAfter=2 * mm,
+            )),HRFlowable(width="100%", color=COLOR_PRIMARY, spaceBefore=0, spaceAfter=8)
         ]
-        for fila in datos:
-            self._fila_tabla(fila, cols)
-        self.ln(5)
 
-    def seccion_materiales(self):
-        if self.reporte.get("uso_materiales") and self.reporte.get("materiales_detalle", "").strip():
-            self.seccion_titulo("Materiales Utilizados")
-            detalle = self.reporte.get("materiales_detalle", "").strip()
-            detalle = detalle.encode('ascii', 'ignore').decode('ascii')
-            self.set_font("Helvetica", "", 9)
-            self.set_text_color(*self.COLOR_TEXTO)
-            self.set_fill_color(252, 248, 245)
-            self.set_draw_color(*self.COLOR_BORDE)
-            self.set_line_width(0.3)
-            ancho = self.w - self.l_margin - self.r_margin
-            self.multi_cell(ancho, 5, detalle, border=1, fill=True, align="L")
-            self.ln(6)
+    def _label_style(self):
+        return ParagraphStyle(
+            "CellLabel", fontName=FONT_BOLD, fontSize=8,
+            textColor=COLOR_PRIMARY, leading=10,
+        )
 
-    def _fila_tabla(self, celdas: tuple, anchos: tuple):
-        h = 8
-        for i, (label, value) in enumerate([(celdas[0], celdas[1]), (celdas[2], celdas[3])]):
-            self.set_fill_color(*self.COLOR_FONDO)
-            self.set_text_color(*self.COLOR_TEXTO)
-            self.set_font("Helvetica", "B", 8)
-            self.cell(anchos[i * 2], h, f"  {label}", border=1, fill=True)
-            val = str(value)
-            if len(val) > 55:
-                val = val[:52] + "..."
-            self.set_fill_color(255, 255, 255)
-            self.set_text_color(*self.COLOR_TEXTO)
-            self.set_font("Helvetica", "", 8)
-            self.cell(anchos[i * 2 + 1], h, f"  {val}", border=1, fill=True, new_x="RIGHT", new_y="LAST")
-        self.ln()
+    def _value_style(self):
+        return ParagraphStyle(
+            "CellValue", fontName=FONT_REGULAR, fontSize=8,
+            textColor=COLOR_PRIMARY, leading=10,
+        )
 
-    def seccion_hallazgos(self):
-        self.seccion_titulo("Hallazgos")
-        obs = self.reporte.get("hallazgos", "").strip() or "Sin hallazgos registrados."
-        obs = obs.encode('ascii', 'ignore').decode('ascii')
-        self.set_font("Helvetica", "", 9)
-        self.set_text_color(*self.COLOR_TEXTO)
-        self.set_fill_color(252, 248, 245)
-        self.set_draw_color(*self.COLOR_BORDE)
-        self.set_line_width(0.3)
-        ancho = self.w - self.l_margin - self.r_margin
-        self.multi_cell(ancho, 5, obs, border=1, fill=True, align="L")
-        self.ln(6)
+    def _body_style(self):
+        return ParagraphStyle(
+            "Body", fontName=FONT_REGULAR, fontSize=9,
+            textColor=COLOR_PRIMARY, leading=12,
+        )
 
-    def seccion_firma(self):
-        self.seccion_titulo("Firma del Cliente")
+    def _fecha(self):
+        label = self._label_style()
+        value = self._value_style()
+
+        data = [
+            [
+                Paragraph("Fecha", label),
+                Paragraph(format_fecha(self.reporte.get("fecha_hora", "")), value),
+            ]
+        ]
+
+        col_widths = [29 * mm, 137 * mm]
+        table = Table(data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -1), 0.5, COLOR_GRID),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_WHITE, COLOR_WHITE]),
+        ]))
+        return [table]       
+
+    def _empresa_sede(self):
+        label = self._label_style()
+        value = self._value_style()
+
+        data = [
+            [
+                Paragraph("Empresa", label),
+                Paragraph(_ascii_safe(self.empresa), value),
+                Paragraph("Punto", label),
+                Paragraph(_ascii_safe(self.sede).title(), value),
+            ]
+        ]
+        col_widths = [29 * mm, 54 * mm, 29 * mm, 54 * mm]
+        table = Table(data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6), 
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -1), 0.5, COLOR_GRID),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_WHITE, COLOR_WHITE]),
+        
+        ]))
+        return [table]
+
+    def _direccion(self):
+        label = self._label_style()
+        value = self._value_style()
+
+        data = [
+            [
+                Paragraph("Dirección", label),
+                Paragraph(_ascii_safe(self.sede_direccion).title(), value),
+            ]
+        ]
+        col_widths = [29 * mm, 137 * mm]
+        table = Table(data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -1), 0.5, COLOR_GRID),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_WHITE, COLOR_WHITE]),
+        ]))
+        return [table]
+
+    def _tecnico_y_motivo(self):
+        label = self._label_style()
+        value = self._value_style()
+
+        data = [
+            [
+                Paragraph("Tecnico", label),
+                Paragraph(_ascii_safe(self.tecnico).title(), value),
+                Paragraph("Motivo Visita", label),
+                Paragraph(_ascii_safe(self.reporte.get("motivo_visita", "")).title(), value),
+            ]
+        ]
+
+        col_widths = [29 * mm, 54 * mm, 29 * mm, 54 * mm]
+        table = Table(data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -1), 0.5, COLOR_GRID),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_WHITE, COLOR_WHITE]),
+        ]))
+        return [table, Spacer(1, 7 * mm)]
+
+    def _materiales_section(self):
+        if not (self.reporte.get("uso_materiales") and self.reporte.get("materiales_detalle", "").strip()):
+            return []
+        detalle = _ascii_safe(self.reporte.get("materiales_detalle", "").strip())
+        return self._section_title("Materiales Utilizados") + [
+            Paragraph(detalle, self._body_style()),
+            Spacer(1, 14 * mm),
+        ]
+
+    def _hallazgos_section(self):
+        obs = self.reporte.get("hallazgos", "").strip()
+        obs = _ascii_safe(obs) if obs else "Sin hallazgos registrados."
+        return self._section_title("Hallazgos") + [
+            Paragraph(obs, self._body_style()),
+            Spacer(1, 14 * mm),
+        ]
+
+    def _firma_section(self):
+        elements = self._section_title("Información del Asesor")
+        label = self._label_style()
+        value = self._value_style()
+        data = [
+            [
+                Paragraph("Nombre del Asesor", label),
+                Paragraph(_ascii_safe(self.reporte.get("nombre_asesor", "")).title(), value),
+            ],
+        ]
+        col_widths = [58 * mm, 108 * mm]
+        table = Table(data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -1), 0.5, COLOR_GRID),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_WHITE, COLOR_WHITE]),
+        ]))
+        elements.append(table)
+        data = [
+            [
+                Paragraph("Telefono del Asesor", label),
+                Paragraph(_ascii_safe(self.reporte.get("telefono_asesor", "")).title(), value),
+            ],
+        ]
+        col_widths = [58 * mm, 108 * mm]
+        table = Table(data, colWidths=col_widths)
+        table.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("GRID", (0, 0), (-1, -1), 0.5, COLOR_GRID),
+            ("ROWBACKGROUNDS", (0, 0), (-1, -1), [COLOR_WHITE, COLOR_WHITE]),
+        ]))
+        elements.append(table)
+        elements.append(Spacer(1, 8 * mm))
         firma_raw = self.reporte.get("firma_vector", "").strip()
         if firma_raw:
             png_buf = svg_paths_a_png_bytes(firma_raw)
             if png_buf:
-                with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
-                    tmp.write(png_buf.read())
-                    tmp_path = tmp.name
-                try:
-                    img_w = 80
-                    x = (self.w - img_w) / 2
-                    self.image(tmp_path, x=x, w=img_w)
-                finally:
-                    os.unlink(tmp_path)
+                img = Image(png_buf, width=80 * mm, height=30 * mm)
+                img.hAlign = "CENTER"
+                elements.append(img)
+                elements.append(Spacer(1, 4 * mm))
         else:
-            self.set_font("Helvetica", "I", 10)
-            self.set_text_color(150, 150, 150)
-            self.cell(0, 30, "Sin firma registrada", align="C", new_x="LMARGIN", new_y="NEXT")
-        self.set_draw_color(*self.COLOR_TEXTO)
-        self.set_line_width(0.4)
-        x_line = (self.w - 60) / 2
-        y_line = self.get_y() + 12
-        self.line(x_line, y_line, x_line + 60, y_line)
-        self.set_font("Helvetica", "", 8)
-        self.set_text_color(100, 100, 100)
-        self.set_y(y_line + 2)
-        self.cell(0, 6, "Firma de conformidad del cliente", align="C")
+            elements.append(Paragraph(
+                "Sin firma registrada",
+                ParagraphStyle("NoSig", fontName=FONT_ITALIC, fontSize=10,
+                               textColor=COLOR_FOOTER, alignment=TA_CENTER,
+                               spaceAfter=4 * mm),
+            ))
+
+        elements.append(HRFlowable(width=60 * mm, thickness=0.4,
+                                    color=COLOR_PRIMARY, hAlign='CENTER', spaceAfter=2 * mm))
+        elements.append(Paragraph(
+            "Firma de conformidad del Asesor",
+            ParagraphStyle("SigLabel", fontName=FONT_REGULAR, fontSize=8,
+                           textColor=COLOR_SECONDARY, alignment=TA_CENTER),
+        ))
+        return elements
+
+    def build(self):
+        story = (
+            self._fecha() +
+            self._empresa_sede() +
+            self._direccion() +
+            self._tecnico_y_motivo() +
+            self._materiales_section() +
+            self._hallazgos_section() +
+            self._firma_section()
+        )
+        self.doc.build(story, onFirstPage=self._header_footer,
+                       onLaterPages=self._header_footer)
 
 
-def generar_pdf_fpdf(reporte: dict, empresa: str, sede: str, tecnico: str, email_tec: str) -> io.BytesIO:
-    pdf = ReportePDF(reporte, empresa, sede, tecnico, email_tec)
-    pdf.alias_nb_pages()
-    pdf.add_page()
-    pdf.tabla_info()
-    pdf.seccion_materiales()
-    pdf.seccion_hallazgos()
-    pdf.seccion_firma()
-    buf = io.BytesIO()
-    pdf.output(buf)
+def generar_pdf_fpdf(reporte: dict, empresa: str, sede: str,
+                     sede_direccion: str, tecnico: str, email_tec: str) -> io.BytesIO:
+    pdf = ReportePDF(buf := io.BytesIO(), reporte, empresa, sede,
+                     sede_direccion, tecnico, email_tec)
+    pdf.build()
     buf.seek(0)
     return buf

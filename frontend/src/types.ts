@@ -111,3 +111,9 @@ export interface PaginatedResponse<T> {
   items: T[];
   total: number;
 }
+
+export interface Tab {
+  id: string;
+  label: string;
+  icon: React.ReactNode;
+}

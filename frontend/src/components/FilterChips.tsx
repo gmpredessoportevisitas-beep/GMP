@@ -20,7 +20,7 @@ export default function FilterChips({ chips, onToggle }: FilterChipsProps) {
           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
             chip.active
               ? 'bg-primary-600 text-white shadow-sm'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
           }`}
         >
           {chip.label}
