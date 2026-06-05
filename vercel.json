@@ -32,10 +32,6 @@
       "dest": "frontend/favicon.svg"
     },
     {
-      "src": "/logo.svg",
-      "dest": "frontend/logo.svg"
-    },
-    {
       "src": "/manifest.webmanifest",
       "dest": "frontend/manifest.webmanifest"
     },
@@ -49,6 +45,14 @@
     {
       "src": "/workbox-(.*).js",
       "dest": "frontend/workbox-$1.js"
+    },
+    {
+      "src": "/logo.png",
+      "dest": "frontend/logo.png"
+    },
+    {
+      "src": "/logo-white.png",
+      "dest": "frontend/logo-white.png"
     },
     {
       "src": "/((?!api/).*)",
