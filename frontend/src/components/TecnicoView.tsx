@@ -7,6 +7,8 @@ import PoliticaPrivacidad from './PoliticaPrivacidad';
 import QrIcon from '../assets/icons/encuestas/QrIcon';
 import PdfIcon from '../assets/icons/reportes/PdfIcon';
 import GuardarReporte from '../assets/icons/reportes/GuardarReporte';
+import EncuestaIcon from '../assets/icons/reportes/EncuestaIcon';
+import ReportesIcon from '../assets/icons/reportes/ReportesIcon';
 
 const CW = 400;
 const CH = 250;
@@ -203,7 +205,10 @@ export default function TecnicoView() {
               </button>
               <button onClick={() => { setGuardado(null); resetForm(); limpiarFirma(); setStep(1); }}
                 className="w-full py-3.5 px-4 bg-white text-primary-600 border-2 border-primary-600 rounded-xl font-semibold hover:bg-orange-50 transition-all active:scale-[0.97]">
-                Nuevo Reporte
+                <div className="flex items-center justify-center gap-2">
+                  <ReportesIcon />
+                  Nuevo Reporte
+                </div>
               </button>
             </div>
           </div>
@@ -483,13 +488,11 @@ export default function TecnicoView() {
           <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center animate-fade-in"
             onClick={e => e.stopPropagation()}>
             <div className="w-14 h-14 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <svg className="w-7 h-7 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m4-3h-2m2 0v3m6 0v-3h-2m0 0V4m0 11h2m-2 0v3m-6 0h2m0 0v-3m0 0h2m-2 0V8m6 11V8" />
-              </svg>
+              <EncuestaIcon />
             </div>
             <h3 className="text-lg font-bold text-gray-800 mb-1">Encuesta de Satisfaccion</h3>
             <p className="text-sm text-gray-500 mb-5">
-              Escanea este codigo QR con tu celular para llenar la encuesta
+              Escanea este codigo QR con tu celular para llenar la encuesta de satisfaccion
             </p>
             <div className="flex justify-center mb-5">
               <div className="bg-white p-3 border-2 border-gray-100 rounded-xl shadow-inner">
