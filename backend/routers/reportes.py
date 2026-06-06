@@ -1,8 +1,9 @@
+import uuid
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
-from config import supabase
+from config import supabase, FRONTEND_URL
 from schemas import ReporteCreate
 from deps import get_usuario_actual
 from utils import ahora_iso, generar_pdf_fpdf, fecha_local_a_utc
@@ -26,6 +27,10 @@ async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario
 
     result = supabase.table("reportes").insert(row).execute()
     reporte = result.data[0]
+
+    token = str(uuid.uuid4())
+    supabase.table("reportes").update({"token_encuesta": token}).eq("id", reporte["id"]).execute()
+    reporte["token_encuesta"] = token
 
     if data.encuesta_respuestas:
         encuesta = (supabase.table("encuestas_satisfaccion")
@@ -137,6 +142,24 @@ async def previsualizar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario
     buf = generar_pdf_fpdf(r, empresa_nombre, sede_nombre, sede_direccion, tecnico_nombre, tecnico_email)
     return StreamingResponse(buf, media_type="application/pdf",
                              headers={"Content-Disposition": "inline"})
+
+
+@router.get("/reportes/{reporte_id}/qr-encuesta")
+async def obtener_qr_encuesta(reporte_id: int, usuario: dict = Depends(get_usuario_actual)):
+    result = supabase.table("reportes").select("id, token_encuesta, tecnico_id").eq("id", reporte_id).execute()
+    if not result.data:
+        raise HTTPException(404, "Reporte no encontrado")
+    reporte = result.data[0]
+
+    if usuario["rol"] != "admin" and reporte.get("tecnico_id") != usuario["id"]:
+        raise HTTPException(403, "No tienes permiso para ver este reporte.")
+
+    token = reporte.get("token_encuesta", "")
+    if not token:
+        token = str(uuid.uuid4())
+        supabase.table("reportes").update({"token_encuesta": token}).eq("id", reporte_id).execute()
+
+    return {"url": f"{FRONTEND_URL}/encuesta/{token}"}
 
 
 @router.get("/health")

@@ -28,6 +28,12 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState('reportes');
   const [menuOpen, setMenuOpen] = useState(false);
 
+  const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+  const colorPorRol = '#E55A01';
+  if (metaThemeColor) {
+    metaThemeColor.setAttribute('content', colorPorRol);
+  }
+
   return (
     <div className="h-screen bg-gray-50 flex">
       {/* Sidebar desktop */}
@@ -73,7 +79,7 @@ export default function AdminDashboard() {
 
       {/* Header movil */}
       <div className="flex-1 flex flex-col">
-        <header className="md:hidden bg-gradient-to-r from-primary-700 to-black text-white px-4 py-3 flex items-center justify-between shadow-lg sticky top-0 z-30">
+        <header className="md:hidden bg-primary-600 text-white px-4 py-3 flex items-center justify-between shadow-lg sticky top-0 z-30">
           <div className="flex items-center gap-3">
             <img src={logo} alt="Logo GMP" className="h-10" />
           </div>

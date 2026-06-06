@@ -49,7 +49,7 @@ def format_fecha(iso: str, tz_offset: int = -5) -> str:
         return iso
 
 
-def svg_paths_a_png(svg_string: str, width: int = 400, height: int = 150) -> str:
+def svg_paths_a_png(svg_string: str, width: int = 400, height: int = 250) -> str:
     if not svg_string or not svg_string.strip():
         return ""
     paths = _extraer_paths(svg_string)
@@ -66,7 +66,7 @@ def svg_paths_a_png(svg_string: str, width: int = 400, height: int = 150) -> str
     return f"data:image/png;base64,{b64}"
 
 
-def svg_paths_a_png_bytes(svg_string: str, width: int = 400, height: int = 150) -> Optional[io.BytesIO]:
+def svg_paths_a_png_bytes(svg_string: str, width: int = 400, height: int = 250) -> Optional[io.BytesIO]:
     if not svg_string or not svg_string.strip():
         return None
     paths = _extraer_paths(svg_string)
@@ -344,6 +344,15 @@ class ReportePDF:
             Spacer(1, 14 * mm),
         ]
 
+    def _antena_section(self):
+        if not (self.reporte.get("cambio_antena") and self.reporte.get("serial_antena", "").strip()):
+            return []
+        serial = _ascii_safe(self.reporte.get("serial_antena", "").strip())
+        return self._section_title("Cambio de Antena") + [
+            Paragraph(f"Antena reemplazada — Serial: {serial}", self._body_style()),
+            Spacer(1, 14 * mm),
+        ]
+
     def _hallazgos_section(self):
         obs = self.reporte.get("hallazgos", "").strip()
         obs = _ascii_safe(obs) if obs else "Sin hallazgos registrados."
@@ -393,7 +402,7 @@ class ReportePDF:
         elements.append(Spacer(1, 8 * mm))
         firma_raw = self.reporte.get("firma_vector", "").strip()
         if firma_raw:
-            png_buf = svg_paths_a_png_bytes(firma_raw)
+            png_buf = svg_paths_a_png_bytes(firma_raw, width=400, height=250)
             if png_buf:
                 img = Image(png_buf, width=80 * mm, height=30 * mm)
                 img.hAlign = "CENTER"
@@ -423,6 +432,7 @@ class ReportePDF:
             self._direccion() +
             self._tecnico_y_motivo() +
             self._materiales_section() +
+            self._antena_section() +
             self._hallazgos_section() +
             self._firma_section()
         )

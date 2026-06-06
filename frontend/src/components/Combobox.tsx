@@ -157,7 +157,7 @@ export default function Combobox({
       {open && (
         <ul
           ref={listRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-60 overflow-y-auto"
+          className="absolute z-50 w-full mt-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden max-h-96 overflow-y-auto"
           role="listbox"
         >
           {loading ? (
@@ -175,7 +175,7 @@ export default function Combobox({
                 aria-selected={idx === highlightIndex}
                 onMouseDown={(e) => {e.preventDefault(); selectOption(opt.value); }}
                 onMouseEnter={() => setHighlightIndex(idx)}
-                className={`px-4 py-2.5 cursor-pointer transition-colors text-sm  ${
+                className={`px-4 py-2.5 cursor-pointer transition-colors text-sm border-b border-gray-200  ${
                   idx === highlightIndex || opt.value === value
                     ? 'bg-primary-50 text-primary-700'
                     : 'text-gray-700 hover:bg-gray-50'

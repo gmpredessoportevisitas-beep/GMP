@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Empresa, Sede, EncuestaPregunta } from '../types';
+import { Empresa, Sede } from '../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 export const VERSION_POLITICA = '1.0';
@@ -20,13 +20,11 @@ export default function useTecnicoView() {
   const [hallazgos, setHallazgos] = useState('');
   const [usoMateriales, setUsoMateriales] = useState(false);
   const [materialesDetalle, setMaterialesDetalle] = useState('');
+  const [cambioAntena, setCambioAntena] = useState(false);
+  const [serialAntena, setSerialAntena] = useState('');
   const [motivoVisita, setMotivoVisita] = useState('soporte');
   const [motivoVisitaOtro, setMotivoVisitaOtro] = useState('');
   const [firmaSvg, setFirmaSvg] = useState('');
-
-  const [preguntas, setPreguntas] = useState<EncuestaPregunta[]>([]);
-  const [respuestasEncuesta, setRespuestasEncuesta] = useState<Record<number, number>>({});
-  const [encuestaObservaciones, setEncuestaObservaciones] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [descargando, setDescargando] = useState(false);
@@ -34,22 +32,15 @@ export default function useTecnicoView() {
   const [msg, setMsg] = useState<{ tipo: string; texto: string }>({ tipo: '', texto: '' });
 
   const [aceptoPrivacidad, setAceptoPrivacidad] = useState(false);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [qrLoading, setQrLoading] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
       const t = await getToken();
-      const [rE, rP] = await Promise.all([
-        fetch(`${API}/api/catalogos/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`${API}/api/encuesta-preguntas`),
-      ]);
+      const rE = await fetch(`${API}/api/catalogos/empresas`, { headers: { Authorization: `Bearer ${t}` } });
       if (rE.ok) setEmpresas(await rE.json() as Empresa[]);
-      if (rP.ok) {
-        const data = await rP.json() as EncuestaPregunta[];
-        setPreguntas(data);
-        const inicial: Record<number, number> = {};
-        data.forEach(p => { inicial[p.id] = 0; });
-        setRespuestasEncuesta(inicial);
-      }
       setLoaded(true);
     })();
   }, []);
@@ -103,13 +94,11 @@ export default function useTecnicoView() {
           hallazgos,
           uso_materiales: usoMateriales,
           materiales_detalle: materialesDetalle,
+          cambio_antena: cambioAntena,
+          serial_antena: serialAntena,
           motivo_visita: motivoVisita,
           motivo_visita_otro: motivoVisitaOtro,
           firma_vector: firmaSvg,
-          encuesta_observaciones: encuestaObservaciones,
-          encuesta_respuestas: Object.entries(respuestasEncuesta)
-            .filter(([_, v]) => v > 0)
-            .map(([pid, val]) => ({ pregunta_id: parseInt(pid), valor: val })),
           autorizacion_datos: true,
           version_politica: VERSION_POLITICA,
         }),
@@ -123,7 +112,7 @@ export default function useTecnicoView() {
     } finally {
       setLoading(false);
     }
-  }, [getToken, empresaId, sedeId, nombreAsesor, telefonoAsesor, hallazgos, usoMateriales, materialesDetalle, motivoVisita, motivoVisitaOtro, firmaSvg, encuestaObservaciones, respuestasEncuesta, aceptoPrivacidad]);
+  }, [getToken, empresaId, sedeId, nombreAsesor, telefonoAsesor, hallazgos, usoMateriales, materialesDetalle, cambioAntena, serialAntena, motivoVisita, motivoVisitaOtro, firmaSvg, aceptoPrivacidad]);
 
   const descargarPDF = useCallback(async (reporteId: number) => {
     setDescargando(true);
@@ -144,15 +133,32 @@ export default function useTecnicoView() {
     }
   }, [getToken]);
 
+  const obtenerQrEncuesta = useCallback(async (reporteId: number) => {
+    setQrLoading(true);
+    try {
+      const t = await getToken();
+      const res = await fetch(`${API}/api/reportes/${reporteId}/qr-encuesta`, {
+        headers: { Authorization: `Bearer ${t}` },
+      });
+      if (!res.ok) throw new Error('Error al obtener enlace de encuesta');
+      const data = await res.json();
+      setQrUrl(data.url);
+      setQrModalOpen(true);
+    } catch (err) {
+      setMsg({ tipo: 'error', texto: (err as Error).message });
+    } finally {
+      setQrLoading(false);
+    }
+  }, [getToken]);
+
   const resetForm = useCallback(() => {
     setEmpresaId(''); setSedeId(''); setNombreAsesor(''); setTelefonoAsesor('');
     setHallazgos(''); setUsoMateriales(false); setMaterialesDetalle('');
+    setCambioAntena(false); setSerialAntena('');
     setMotivoVisita('soporte'); setMotivoVisitaOtro(''); setFirmaSvg('');
-    setEncuestaObservaciones('');
-    setRespuestasEncuesta(Object.fromEntries(preguntas.map(p => [p.id, 0])));
     setMsg({ tipo: '', texto: '' });
     setAceptoPrivacidad(false);
-  }, [preguntas]);
+  }, []);
 
   return {
     empresas, sedes, sedesLoading, loaded,
@@ -163,15 +169,16 @@ export default function useTecnicoView() {
     hallazgos, setHallazgos,
     usoMateriales, setUsoMateriales,
     materialesDetalle, setMaterialesDetalle,
+    cambioAntena, setCambioAntena,
+    serialAntena, setSerialAntena,
     motivoVisita, setMotivoVisita,
     motivoVisitaOtro, setMotivoVisitaOtro,
     firmaSvg, setFirmaSvg,
-    preguntas, respuestasEncuesta, setRespuestasEncuesta,
-    encuestaObservaciones, setEncuestaObservaciones,
     loading, descargando, guardado, setGuardado,
     msg, setMsg,
     empresaNombre, sedeNombre,
     guardarReporte, descargarPDF, resetForm, perfil, logout,
     aceptoPrivacidad, setAceptoPrivacidad,
+    qrUrl, qrLoading, qrModalOpen, setQrModalOpen, obtenerQrEncuesta,
   };
 }

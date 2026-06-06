@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from config import supabase
 from schemas import EncuestaCreate, EncuestaPreguntaCreate
 from deps import get_usuario_actual, solo_admin
-from utils import ahora_iso
+from utils import ahora_iso, format_fecha
 
 router = APIRouter(prefix="/api", tags=["encuestas"])
 
@@ -49,6 +49,90 @@ async def eliminar_pregunta(pregunta_id: int, admin: dict = Depends(solo_admin))
     return {"ok": True}
 
 
+@router.get("/encuesta/{token}")
+async def info_encuesta(token: str):
+    reporte = (supabase.table("reportes")
+               .select("id, token_encuesta, empresa_id, sede_id, fecha_hora, empresas(nombre), sedes(nombre)")
+               .eq("token_encuesta", token)
+               .execute())
+    if not reporte.data:
+        raise HTTPException(404, "Enlace no válido")
+
+    r = reporte.data[0]
+    existente = (supabase.table("encuestas_satisfaccion")
+                 .select("id")
+                 .eq("reporte_id", r["id"])
+                 .execute())
+    if existente.data:
+        return {"completada": True, "mensaje": "Esta encuesta ya fue completada."}
+
+    preguntas = (supabase.table("encuesta_preguntas")
+                 .select("*")
+                 .eq("activa", True)
+                 .order("orden")
+                 .execute())
+
+    empresa_nombre = r.get("empresas", {}).get("nombre", "") if isinstance(r.get("empresas"), dict) else ""
+    sede_nombre = r.get("sedes", {}).get("nombre", "") if isinstance(r.get("sedes"), dict) else ""
+
+    return {
+        "completada": False,
+        "empresa": empresa_nombre,
+        "sede": sede_nombre,
+        "fecha": format_fecha(r.get("fecha_hora", "")),
+        "preguntas": preguntas.data,
+    }
+
+
+@router.post("/encuesta/{token}", status_code=201)
+async def crear_encuesta_publica(token: str, data: EncuestaCreate):
+    reporte = (supabase.table("reportes")
+               .select("id, token_encuesta")
+               .eq("token_encuesta", token)
+               .execute())
+    if not reporte.data:
+        raise HTTPException(404, "Enlace no válido")
+
+    reporte_id = reporte.data[0]["id"]
+
+    existente = (supabase.table("encuestas_satisfaccion")
+                 .select("id")
+                 .eq("reporte_id", reporte_id)
+                 .execute())
+    if existente.data:
+        raise HTTPException(400, "Esta encuesta ya fue completada.")
+
+    encuesta = (supabase.table("encuestas_satisfaccion")
+                .insert({
+                    "reporte_id": reporte_id,
+                    "observaciones": data.observaciones,
+                    "creado_en": ahora_iso(),
+                })
+                .execute())
+    encuesta_id = encuesta.data[0]["id"]
+
+    respuestas = []
+    for r_item in data.respuestas:
+        pregunta = (supabase.table("encuesta_preguntas")
+                    .select("id")
+                    .eq("id", r_item.pregunta_id)
+                    .eq("activa", True)
+                    .execute())
+        if not pregunta.data:
+            continue
+        respuestas.append({
+            "encuesta_id": encuesta_id,
+            "pregunta_id": r_item.pregunta_id,
+            "valor": r_item.valor,
+            "creado_en": ahora_iso(),
+        })
+
+    if respuestas:
+        supabase.table("encuesta_respuestas").insert(respuestas).execute()
+
+    return {"mensaje": "Encuesta registrada exitosamente", "encuesta_id": encuesta_id}
+
+
 @router.post("/reportes/{reporte_id}/encuesta", status_code=201)
 async def crear_encuesta(reporte_id: int, data: EncuestaCreate):
     reporte = supabase.table("reportes").select("id").eq("id", reporte_id).execute()
@@ -69,14 +153,14 @@ async def crear_encuesta(reporte_id: int, data: EncuestaCreate):
     encuesta_id = encuesta.data[0]["id"]
 
     respuestas = []
-    for r in data.respuestas:
-        pregunta = supabase.table("encuesta_preguntas").select("id").eq("id", r.pregunta_id).eq("activa", True).execute()
+    for r_item in data.respuestas:
+        pregunta = supabase.table("encuesta_preguntas").select("id").eq("id", r_item.pregunta_id).eq("activa", True).execute()
         if not pregunta.data:
             continue
         respuestas.append({
             "encuesta_id": encuesta_id,
-            "pregunta_id": r.pregunta_id,
-            "valor": r.valor,
+            "pregunta_id": r_item.pregunta_id,
+            "valor": r_item.valor,
             "creado_en": ahora_iso(),
         })
 

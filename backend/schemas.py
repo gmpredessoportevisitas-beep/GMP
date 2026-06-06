@@ -41,6 +41,8 @@ class ReporteCreate(BaseModel):
     hallazgos: str = Field(default="", max_length=5000)
     uso_materiales: bool = False
     materiales_detalle: str = Field(default="", max_length=2000)
+    cambio_antena: bool = False
+    serial_antena: str = Field(default="", max_length=100)
     motivo_visita: str = Field(default="soporte", max_length=50)
     motivo_visita_otro: str = Field(default="", max_length=255)
     firma_vector: str = Field(default="", max_length=50000)

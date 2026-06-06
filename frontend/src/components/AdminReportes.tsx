@@ -191,6 +191,7 @@ export default function AdminReportes() {
                     <TableTh className="text-white/90">Asesor</TableTh>
                     <TableTh className="text-white/90">Hallazgos</TableTh>
                     <TableTh className="text-white/90">Materiales</TableTh>
+                    <TableTh className="text-white/90">Serial Antena</TableTh>
                     <TableTh className="text-white/90 text-center">Acciones</TableTh>
                   </tr>
                 </thead>
@@ -205,6 +206,7 @@ export default function AdminReportes() {
                       <td className="px-5 py-2 text-xs text-gray-600 capitalize">{r.nombre_asesor || '—'}</td>
                       <td className="px-5 py-2 text-xs text-gray-600 max-w-[220px] truncate">{r.hallazgos || '—'}</td>
                       <td className="px-5 py-2 text-xs text-gray-600 max-w-[220px] truncate">{r.  materiales_detalle || '—'}</td>
+                      <td className="px-5 py-2 text-xs text-gray-600 max-w-[140px] truncate">{r.serial_antena || '—'}</td>
                       <td className="px-5 py-2 text-center">
                         <div className="flex items-center justify-center gap-2">
                           <button onClick={() => previsualizar(r.id)} title='Ver reporte'

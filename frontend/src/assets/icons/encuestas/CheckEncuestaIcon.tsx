@@ -1,12 +1,6 @@
 const CheckEncuestaIcon = () => {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-message-check">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-            <path d="M8 9h8" />
-            <path d="M8 13h6" />
-            <path d="M12.01 18.594l-4.01 2.406v-3h-2a3 3 0 0 1 -3 -3v-8a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v5.5" />
-            <path d="M15 19l2 2l4 -4" />
-        </svg>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-message-check" height={22} strokeWidth={2} width={22} viewBox="0 0 24 24"><path fill="none" stroke="none" d="M0 0h24v24H0z"/><path d="M8 9h8m-8 4h6m-1.99 5.594L8 21v-3H6a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v5.5M15 19l2 2 4-4"/></svg>
     );
 };
 

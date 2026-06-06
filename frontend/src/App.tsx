@@ -1,7 +1,9 @@
+import { Routes, Route } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Login from './components/Login';
 import TecnicoView from './components/TecnicoView';
 import AdminDashboard from './components/AdminDashboard';
+import EncuestaPublica from './components/EncuestaPublica';
 import AnimatedWifiIcon from './assets/icons/AnimatedWifiIcon';
 import { Analytics } from "@vercel/analytics/react"
 
@@ -29,7 +31,10 @@ export default function App() {
   return (
     <AuthProvider>
       <Analytics />
-      <AppContent />
+      <Routes>
+        <Route path="/encuesta/:token" element={<EncuestaPublica />} />
+        <Route path="*" element={<AppContent />} />
+      </Routes>
     </AuthProvider>
   );
 }

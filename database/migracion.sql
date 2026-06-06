@@ -65,3 +65,49 @@ CREATE TRIGGER on_auth_user_created
 ALTER TABLE reportes ADD COLUMN IF NOT EXISTS autorizacion_datos   BOOLEAN     NOT NULL DEFAULT false;
 ALTER TABLE reportes ADD COLUMN IF NOT EXISTS fecha_autorizacion   TIMESTAMPTZ DEFAULT NULL;
 ALTER TABLE reportes ADD COLUMN IF NOT EXISTS version_politica     VARCHAR(50) DEFAULT '';
+
+-- 5. Campo de antena, serial y token de encuesta externa
+ALTER TABLE reportes ADD COLUMN IF NOT EXISTS cambio_antena    BOOLEAN      NOT NULL DEFAULT false;
+ALTER TABLE reportes ADD COLUMN IF NOT EXISTS serial_antena    VARCHAR(100) NOT NULL DEFAULT '';
+ALTER TABLE reportes ADD COLUMN IF NOT EXISTS token_encuesta   VARCHAR(36)  NOT NULL DEFAULT '';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reportes_token_encuesta ON reportes (token_encuesta) WHERE token_encuesta != '';
+
+-- 6. Recrear vista de búsqueda incluyendo todos los campos nuevos
+DROP VIEW IF EXISTS vista_reportes_busqueda;
+CREATE VIEW vista_reportes_busqueda AS
+SELECT r.id,
+    r.fecha_hora,
+    r.empresa_id,
+    r.sede_id,
+    r.tecnico_id,
+    r.nombre_asesor,
+    r.telefono_asesor,
+    r.hallazgos,
+    r.uso_materiales,
+    r.materiales_detalle,
+    r.motivo_visita,
+    r.motivo_visita_otro,
+    r.firma_vector,
+    r.creado_en,
+    r.autorizacion_datos,
+    r.fecha_autorizacion,
+    r.version_politica,
+    r.cambio_antena,
+    r.serial_antena,
+    r.token_encuesta,
+    p.nombre_completo AS tecnico_nombre,
+    e.nombre AS empresa_nombre,
+    s.nombre AS sede_nombre,
+    CONCAT_WS(' ',
+        r.nombre_asesor,
+        r.hallazgos,
+        r.materiales_detalle,
+        r.serial_antena,
+        p.nombre_completo,
+        e.nombre,
+        s.nombre
+    ) AS texto_busqueda
+FROM reportes r
+    LEFT JOIN perfiles p ON r.tecnico_id = p.id
+    LEFT JOIN empresas e ON r.empresa_id = e.id
+    LEFT JOIN sedes s ON r.sede_id = s.id;

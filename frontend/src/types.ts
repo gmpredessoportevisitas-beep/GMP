@@ -39,6 +39,8 @@ export interface ReporteVista {
   hallazgos: string;
   uso_materiales: boolean;
   materiales_detalle?: string;
+  cambio_antena: boolean;
+  serial_antena?: string;
   motivo_visita: string;
   motivo_visita_otro?: string;
   firma_vector: string;
@@ -49,6 +51,16 @@ export interface ReporteVista {
   autorizacion_datos: boolean;
   fecha_autorizacion: string | null;
   version_politica: string;
+  token_encuesta?: string;
+}
+
+export interface EncuestaPublicaInfo {
+  completada: boolean;
+  mensaje?: string;
+  empresa?: string;
+  sede?: string;
+  fecha?: string;
+  preguntas?: EncuestaPregunta[];
 }
 
 export interface EncuestaPregunta {

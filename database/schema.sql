@@ -75,6 +75,9 @@ CREATE TABLE IF NOT EXISTS reportes (
     hallazgos       TEXT            NOT NULL DEFAULT '',
     uso_materiales  BOOLEAN         NOT NULL DEFAULT false,
     materiales_detalle TEXT          NOT NULL DEFAULT '',
+    cambio_antena   BOOLEAN         NOT NULL DEFAULT false,
+    serial_antena   VARCHAR(100)    NOT NULL DEFAULT '',
+    token_encuesta  VARCHAR(36)     NOT NULL DEFAULT '',
     motivo_visita   VARCHAR(50)     NOT NULL DEFAULT 'soporte'
         CHECK (motivo_visita IN ('soporte', 'instalación', 'reubicación', 'desinstalación', 'otro')),
     motivo_visita_otro VARCHAR(255) NOT NULL DEFAULT '',
@@ -87,6 +90,7 @@ CREATE TABLE IF NOT EXISTS reportes (
 CREATE INDEX IF NOT EXISTS idx_reportes_fecha    ON reportes (fecha_hora DESC);
 CREATE INDEX IF NOT EXISTS idx_reportes_empresa  ON reportes (empresa_id);
 CREATE INDEX IF NOT EXISTS idx_reportes_tecnico  ON reportes (tecnico_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_reportes_token_encuesta ON reportes (token_encuesta) WHERE token_encuesta != '';
 
 -- 5. ENCUESTA_PREGUNTAS (banco dinámico de preguntas)
 CREATE TABLE IF NOT EXISTS encuesta_preguntas (

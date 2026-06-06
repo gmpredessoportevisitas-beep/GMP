@@ -157,7 +157,7 @@ export default function useAdminReportes() {
       try { return new Date(iso).toLocaleString('es-CO', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: true }); }
       catch { return iso; }
     };
-    const h = ['ID', 'Fecha', 'Empresa', 'Sede', 'Tecnico', 'Asesor', 'Telefono Asesor', 'Hallazgos', 'Uso Materiales', 'Materiales Detalle', 'Motivo Visita', 'Motivo Visita Otro'];
+    const h = ['ID', 'Fecha', 'Empresa', 'Sede', 'Tecnico', 'Asesor', 'Telefono Asesor', 'Hallazgos', 'Uso Materiales', 'Materiales Detalle', 'Cambio Antena', 'Serial Antena', 'Motivo Visita', 'Motivo Visita Otro'];
     const rows = reportes.map(r => [
       r.id, formatFecha(r.fecha_hora),
       csv(r.empresa_nombre),
@@ -168,6 +168,8 @@ export default function useAdminReportes() {
       csv(r.hallazgos),
       r.uso_materiales ? 'Si' : 'No',
       csv(r.materiales_detalle),
+      r.cambio_antena ? 'Si' : 'No',
+      csv(r.serial_antena),
       r.motivo_visita === 'otro' && r.motivo_visita_otro ? `Otro: ${r.motivo_visita_otro}` : csv(r.motivo_visita),
       csv(r.motivo_visita_otro),
     ]);
