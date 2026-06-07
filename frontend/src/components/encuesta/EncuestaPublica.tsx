@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { EncuestaPregunta } from '../types';
-import Logo from '../assets/logo.svg';
+import { EncuestaPregunta } from '../../types';
+import Logo from '../../assets/logo.svg';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 

@@ -1,15 +1,15 @@
-import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
-import useAdminEncuestaPreguntas from '../hooks/useAdminEncuestaPreguntas';
-import TableTh from './TableTh';
-import PageHeader from './PageHeader';
-import AddEncuestaIcon from '../assets/icons/encuestas/AddEncuestaIcon';
-import CloseEncuestaIcon from '../assets/icons/encuestas/CloseEncuestaIcon';
-import CheckEncuestaIcon from '../assets/icons/encuestas/CheckEncuestaIcon';
-import ButtonCrud from './ButtonCrud';
+import AnimatedWifiIcon from '../../assets/icons/AnimatedWifiIcon';
+import useAdminEncuestaPreguntas from '../../hooks/admin/useAdminEncuestaPreguntas';
+import TableTh from '../ui/TableTh';
+import PageHeader from '../ui/PageHeader';
+import AddEncuestaIcon from '../../assets/icons/encuestas/AddEncuestaIcon';
+import CloseEncuestaIcon from '../../assets/icons/encuestas/CloseEncuestaIcon';
+import CheckEncuestaIcon from '../../assets/icons/encuestas/CheckEncuestaIcon';
+import ButtonCrud from '../ui/ButtonCrud';
 
 export default function AdminEncuestaPreguntas() {
   const {
-    items, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items, form, setForm, editId, saving, cargando, showForm, setShowForm,
     resetForm, guardar, editar, eliminar,
   } = useAdminEncuestaPreguntas();
 
@@ -28,17 +28,6 @@ export default function AdminEncuestaPreguntas() {
             />
           }
         />
-      {msg && (
-        <div className={`mb-5 p-4 rounded-xl text-sm font-medium border flex items-center gap-3 ${
-          msg.includes('Error') ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
-        }`}>
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {msg}
-          <button onClick={() => setMsg('')} className="ml-auto text-gray-400 hover:text-gray-600">X</button>
-        </div>
-      )}
       {showForm && (
         <form onSubmit={guardar} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
           <h3 className="text-md font-bold text-gray-800 mb-1">{editId ? 'Editar Pregunta' : 'Nueva Pregunta'}</h3>

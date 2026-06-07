@@ -1,18 +1,18 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 import AdminEmpresas from './AdminEmpresas';
 import AdminSedes from './AdminSedes';
 import AdminUsuarios from './AdminUsuarios';
 import AdminReportes from './AdminReportes';
 import AdminEncuestaPreguntas from './AdminEncuestaPreguntas';
-import UsuarioIcon from '../assets/icons/usuarios/UsuarioIcon';
-import EmpresaIcon from '../assets/icons/empresas/EmpresaIcon';
-import SedesIcon from '../assets/icons/sedes/SedesIcon';
-import EncuestasIcon from '../assets/icons/encuestas/EncuestasIcon';
-import ReportesIcon from '../assets/icons/reportes/ReportesIcon';
-import logo from '../assets/logo-white.svg';
-import LogoutIcon from '../assets/icons/LogoutIcon'
-import type { Tab } from '../types';
+import UsuarioIcon from '../../assets/icons/usuarios/UsuarioIcon';
+import EmpresaIcon from '../../assets/icons/empresas/EmpresaIcon';
+import SedesIcon from '../../assets/icons/sedes/SedesIcon';
+import EncuestasIcon from '../../assets/icons/encuestas/EncuestasIcon';
+import ReportesIcon from '../../assets/icons/reportes/ReportesIcon';
+import logo from '../../assets/logo-white.svg';
+import LogoutIcon from '../../assets/icons/LogoutIcon';
+import type { Tab } from '../../types';
 
 
 

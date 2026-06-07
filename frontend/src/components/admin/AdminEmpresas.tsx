@@ -1,16 +1,16 @@
-import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
-import useAdminEmpresas from '../hooks/useAdminEmpresas';
-import SearchBar from './SearchBar';
-import TableTh from './TableTh';
-import PageHeader from './PageHeader';
-import AddEmpresaIcon from '../assets/icons/empresas/AddEmpresaIcon';
-import CloseEmpresaIcon from '../assets/icons/empresas/CloseEmpresaIcon';
-import CheckEmpresaIcon from '../assets/icons/empresas/CheckEmpresaIcon';
-import ButtonCrud from './ButtonCrud';
+import AnimatedWifiIcon from '../../assets/icons/AnimatedWifiIcon';
+import useAdminEmpresas from '../../hooks/admin/useAdminEmpresas';
+import SearchBar from '../ui/SearchBar';
+import TableTh from '../ui/TableTh';
+import PageHeader from '../ui/PageHeader';
+import AddEmpresaIcon from '../../assets/icons/empresas/AddEmpresaIcon';
+import CloseEmpresaIcon from '../../assets/icons/empresas/CloseEmpresaIcon';
+import CheckEmpresaIcon from '../../assets/icons/empresas/CheckEmpresaIcon';
+import ButtonCrud from '../ui/ButtonCrud';
 
 export default function AdminEmpresas() {
   const {
-    items, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items, form, setForm, editId, saving, cargando, showForm, setShowForm,
     resetForm, guardar, editar, eliminar, searchTerm, setSearchTerm,
   } = useAdminEmpresas();
 
@@ -29,17 +29,6 @@ export default function AdminEmpresas() {
             />
           }
         />
-      {msg && (
-        <div className={`mb-5 p-4 rounded-xl text-sm font-medium border flex items-center gap-3 ${
-          msg.includes('Error') ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
-        }`}>
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {msg}
-          <button onClick={() => setMsg('')} className="ml-auto text-gray-400 hover:text-gray-600">X</button>
-        </div>
-      )}
       <div className="mb-5">
         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Buscar por nombre, NIT, direccion..." />
       </div>

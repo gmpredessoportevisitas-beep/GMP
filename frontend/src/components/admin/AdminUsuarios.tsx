@@ -1,20 +1,20 @@
 import { useState, Fragment } from 'react';
-import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
-import useAdminUsuarios from '../hooks/useAdminUsuarios';
-import SearchBar from './SearchBar';
-import FilterChips from './FilterChips';
-import TableTh from './TableTh';
-import PageHeader from './PageHeader';
-import CloseUsuarioIcon from '../assets/icons/usuarios/CloseUsuarioIcon';
-import AddUsuarioIcon from '../assets/icons/usuarios/AddUsuarioIcon';
-import ButtonCrud from './ButtonCrud';
-import CheckUsuarioIcon from '../assets/icons/usuarios/CheckUsuarioIcon';
-import EyeIcon from '../assets/icons/EyeIcon';
+import AnimatedWifiIcon from '../../assets/icons/AnimatedWifiIcon';
+import useAdminUsuarios from '../../hooks/admin/useAdminUsuarios';
+import SearchBar from '../ui/SearchBar';
+import FilterChips from '../ui/FilterChips';
+import TableTh from '../ui/TableTh';
+import PageHeader from '../ui/PageHeader';
+import CloseUsuarioIcon from '../../assets/icons/usuarios/CloseUsuarioIcon';
+import AddUsuarioIcon from '../../assets/icons/usuarios/AddUsuarioIcon';
+import ButtonCrud from '../ui/ButtonCrud';
+import CheckUsuarioIcon from '../../assets/icons/usuarios/CheckUsuarioIcon';
+import EyeIcon from '../../assets/icons/EyeIcon';
 
 
 export default function AdminUsuarios() {
   const {
-    items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items, form, setForm, saving, cargando, showForm, setShowForm,
     resetForm, crearUsuario, toggleActivo, cambiarPassword,
     editingPasswordId, setEditingPasswordId, newPassword, setNewPassword,
     searchTerm, setSearchTerm, filtroRol, setFiltroRol, filtroEstado, setFiltroEstado,
@@ -51,18 +51,6 @@ export default function AdminUsuarios() {
             />
           }
         />
-
-      {msg && (
-        <div className={`mb-5 p-4 rounded-xl text-sm font-medium border flex items-center gap-3 ${
-          msg.includes('Error') ? 'bg-red-50 text-red-800 border-red-200' : 'bg-green-50 text-green-800 border-green-200'
-        }`}>
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {msg}
-          <button onClick={() => setMsg('')} className="ml-auto text-gray-400 hover:text-gray-600">X</button>
-        </div>
-      )}
 
       <div className="mb-4">
         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Buscar por nombre o usuario..." />
@@ -172,7 +160,7 @@ export default function AdminUsuarios() {
                     </td>
                     <td className="px-5 py-3 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => toggleActivo(i.id)}
+                        <button onClick={() => toggleActivo(i.id, i.nombre_completo, i.activo)}
                           title={i.activo ? 'Desactivar usuario' : 'Activar usuario'}
                           className={`py-2 px-2 text-xs font-semibold rounded-lg transition-all ${
                             i.activo

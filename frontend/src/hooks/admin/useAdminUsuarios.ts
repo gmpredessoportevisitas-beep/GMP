@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useDebounce } from './useDebounce';
-import { Perfil, UsuarioForm } from '../types';
+import { toast } from 'sonner';
+import Swal from 'sweetalert2';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDebounce } from '../useDebounce';
+import { Perfil, UsuarioForm } from '../../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -11,7 +13,6 @@ export default function useAdminUsuarios() {
   const [form, setForm] = useState<UsuarioForm>({ username: '', password: '', nombre_completo: '', rol: 'tecnico' });
   const [saving, setSaving] = useState(false);
   const [cargando, setCargando] = useState(true);
-  const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroRol, setFiltroRol] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function useAdminUsuarios() {
 
   const crearUsuario = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true); setMsg('');
+    setSaving(true);
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/admin/usuarios`, {
@@ -48,19 +49,31 @@ export default function useAdminUsuarios() {
         body: JSON.stringify(form),
       });
       if (res.ok) {
-        setMsg('Usuario creado exitosamente.');
+        toast.success('Usuario creado exitosamente.');
         resetForm();
         cargar();
       } else {
         const err = await res.json().catch(() => ({}));
-        setMsg(err.detail || 'Error al crear usuario.');
+        toast.error(err.detail || 'Error al crear usuario.');
       }
     } finally {
       setSaving(false);
     }
   }, [getToken, form, resetForm, cargar]);
 
-  const toggleActivo = useCallback(async (userId: string) => {
+  const toggleActivo = useCallback(async (userId: string, nombre: string, activo: boolean) => {
+    const accion = activo ? 'Desactivar' : 'Activar';
+    const result = await Swal.fire({
+      title: `${accion} "${nombre}"?`,
+      text: activo ? 'El usuario no podra iniciar sesion hasta que se reactive.' : 'El usuario podra iniciar sesion nuevamente.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: activo ? '#dc2626' : '#16a34a',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: `Si, ${accion.toLowerCase()}`,
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/admin/usuarios/${userId}/toggle`, {
@@ -75,10 +88,10 @@ export default function useAdminUsuarios() {
 
   const cambiarPassword = useCallback(async (userId: string) => {
     if (!newPassword || newPassword.length < 6) {
-      setMsg('La contrasena debe tener al menos 6 caracteres.');
+      toast.warning('La contraseña debe tener al menos 6 caracteres.');
       return;
     }
-    setSaving(true); setMsg('');
+    setSaving(true);
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/admin/usuarios/${userId}/password`, {
@@ -87,12 +100,12 @@ export default function useAdminUsuarios() {
         body: JSON.stringify({ password: newPassword }),
       });
       if (res.ok) {
-        setMsg('Contrasena actualizada correctamente.');
+        toast.success('Contraseña actualizada correctamente.');
         setEditingPasswordId(null);
         setNewPassword('');
       } else {
         const err = await res.json().catch(() => ({}));
-        setMsg(err.detail || 'Error al cambiar contrasena.');
+        toast.error(err.detail || 'Error al cambiar contraseña.');
       }
     } finally {
       setSaving(false);
@@ -116,7 +129,7 @@ export default function useAdminUsuarios() {
   }, [items, debouncedSearch, filtroRol, filtroEstado]);
 
   return {
-    items: filteredItems, allItems: items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items: filteredItems, allItems: items, form, setForm, saving, cargando, showForm, setShowForm,
     cargar, resetForm, crearUsuario, toggleActivo, cambiarPassword,
     editingPasswordId, setEditingPasswordId, newPassword, setNewPassword,
     searchTerm, setSearchTerm, filtroRol, setFiltroRol, filtroEstado, setFiltroEstado,

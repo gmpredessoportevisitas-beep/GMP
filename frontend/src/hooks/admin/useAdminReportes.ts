@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useDebounce } from './useDebounce';
-import { ReporteVista, Perfil, Empresa, EncuestaData, PaginatedResponse } from '../types';
+import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDebounce } from '../useDebounce';
+import { ReporteVista, Perfil, Empresa, EncuestaData, PaginatedResponse } from '../../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const LIMIT = 20;
@@ -18,7 +19,6 @@ export default function useAdminReportes() {
   const [descargando, setDescargando] = useState<number | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoadingId, setPreviewLoadingId] = useState<number | null>(null);
-  const [msg, setMsg] = useState<{ tipo: string; texto: string }>({ tipo: '', texto: '' });
   const [encuestaData, setEncuestaData] = useState<EncuestaData | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEmpresaId, setFilterEmpresaId] = useState<number | null>(null);
@@ -70,7 +70,7 @@ export default function useAdminReportes() {
       if (rTec.ok) setTecnicos(await rTec.json() as Perfil[]);
       if (rEmp.ok) setEmpresas(await rEmp.json() as Empresa[]);
     } catch {
-      setMsg({ tipo: 'error', texto: 'Error al cargar filtros' });
+      toast.error('Error al cargar filtros');
     } finally {
       setLoadingFilters(false);
     }
@@ -96,7 +96,7 @@ export default function useAdminReportes() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert('Error al descargar PDF: ' + (err as Error).message);
+      toast.error('Error al descargar PDF: ' + (err as Error).message);
     } finally {
       setDescargando(null);
     }
@@ -104,7 +104,6 @@ export default function useAdminReportes() {
 
   const previsualizar = useCallback(async (id: number) => {
     setPreviewLoadingId(id);
-    setMsg({ tipo: '', texto: '' });
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/reportes/${id}/preview-pdf`, {
@@ -115,7 +114,7 @@ export default function useAdminReportes() {
       const url = window.URL.createObjectURL(blob);
       setPreviewUrl(url);
     } catch (err) {
-      setMsg({ tipo: 'error', texto: (err as Error).message });
+      toast.error((err as Error).message);
     } finally {
       setPreviewLoadingId(null);
     }
@@ -128,26 +127,25 @@ export default function useAdminReportes() {
   const verEncuesta = useCallback(async (reporteId: number) => {
     setEncuestaData(null);
     setLoadingEncuesta(reporteId);
-    setMsg({ tipo: '', texto: '' });
     try {
       const t = await getToken();
       const res = await fetch(`${API}/api/reportes/${reporteId}/encuesta`, {
         headers: { Authorization: `Bearer ${t}` },
       });
       if (!res.ok) {
-        if (res.status === 404) { setMsg({ tipo: 'info', texto: 'Este reporte no tiene encuesta registrada.' }); }
+        if (res.status === 404) { toast.info('Este reporte no tiene encuesta registrada.'); }
         else throw new Error('Error al consultar encuesta');
       } else {
         setEncuestaData(await res.json() as EncuestaData);
       }
     } catch (err) {
-      setMsg({ tipo: 'error', texto: (err as Error).message });
+      toast.error((err as Error).message);
     } finally {
       setLoadingEncuesta(null);
     }
   }, [getToken]);
 
-  const cerrarEncuesta = useCallback(() => { setEncuestaData(null); setMsg({ tipo: '', texto: '' }); }, []);
+  const cerrarEncuesta = useCallback(() => { setEncuestaData(null); }, []);
 
   const exportarCSV = useCallback(() => {
     if (!reportes.length) return;
@@ -180,14 +178,12 @@ export default function useAdminReportes() {
     a.click();
   }, [reportes]);
 
-  const setMsgAction = useCallback((m: { tipo: string; texto: string }) => setMsg(m), []);
-
   return {
     reportes, totalReportes, loading, error, pagina, setPagina, loadingFilters,
     descargando, previewUrl, previewLoadingId, loadingEncuesta,
-    msg, encuestaData,
+    encuestaData,
     cargar, descargarPDF, previsualizar, cerrarPreview,
-    verEncuesta, cerrarEncuesta, exportarCSV, setMsg: setMsgAction,
+    verEncuesta, cerrarEncuesta, exportarCSV,
     LIMIT, tecnicos, empresas,
     searchTerm, setSearchTerm,
     filterEmpresaId, setFilterEmpresaId,

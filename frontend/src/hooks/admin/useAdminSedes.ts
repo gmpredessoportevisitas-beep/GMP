@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useDebounce } from './useDebounce';
-import { Sede, Empresa, SedeForm, PaginatedResponse } from '../types';
+import { toast } from 'sonner';
+import Swal from 'sweetalert2';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDebounce } from '../useDebounce';
+import { Sede, Empresa, SedeForm, PaginatedResponse } from '../../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 const PAGE_SIZE = 20;
@@ -15,7 +17,6 @@ export default function useAdminSedes() {
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [cargando, setCargando] = useState(true);
-  const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [pagina, setPagina] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,7 +63,7 @@ export default function useAdminSedes() {
 
   const guardar = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true); setMsg('');
+    setSaving(true);
     try {
       const t = await getToken();
       const body = { ...form, empresa_id: parseInt(form.empresa_id) };
@@ -72,8 +73,8 @@ export default function useAdminSedes() {
         method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
         body: JSON.stringify(body),
       });
-      if (res.ok) { setMsg(editId ? 'Sede actualizada.' : 'Sede creada.'); resetForm(); cargar(); }
-      else { const err = await res.json().catch(() => ({})); setMsg(err.detail || 'Error.'); }
+      if (res.ok) { toast.success(editId ? 'Sede actualizada.' : 'Sede creada.'); resetForm(); cargar(); }
+      else { const err = await res.json().catch(() => ({})); toast.error(err.detail || 'Error.'); }
     } finally {
       setSaving(false);
     }
@@ -86,13 +87,24 @@ export default function useAdminSedes() {
   }, []);
 
   const eliminar = useCallback(async (id: number, nombre: string) => {
-    if (!window.confirm(`Eliminar "${nombre}"? Esta accion no se puede deshacer.`)) return;
+    const result = await Swal.fire({
+      title: `Eliminar "${nombre}"?`,
+      text: 'Esta accion no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Si, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
     try {
       const t = await getToken();
       await fetch(`${API}/api/admin/sedes/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+      toast.success(`"${nombre}" eliminada.`);
       cargar();
     } catch {
-      // ignore
+      toast.error('Error al eliminar la sede.');
     }
   }, [getToken, cargar]);
 
@@ -102,7 +114,7 @@ export default function useAdminSedes() {
   }, [empresas]);
 
   return {
-    items, total, empresas, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items, total, empresas, form, setForm, editId, saving, cargando, showForm, setShowForm,
     cargar, resetForm, guardar, editar, eliminar, empresaNombre, allEmpresas,
     pagina, setPagina, searchTerm, setSearchTerm, filterEmpresaId, setFilterEmpresaId, PAGE_SIZE,
   };

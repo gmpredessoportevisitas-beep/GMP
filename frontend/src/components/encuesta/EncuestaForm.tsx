@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { EncuestaPregunta } from '../types';
+import { EncuestaPregunta } from '../../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 

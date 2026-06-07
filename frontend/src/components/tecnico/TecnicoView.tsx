@@ -1,14 +1,15 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
-import useTecnicoView from '../hooks/useTecnicoView';
-import Combobox from './Combobox';
-import Logo from '../assets/logo-white.svg';
-import PoliticaPrivacidad from './PoliticaPrivacidad';
-import QrIcon from '../assets/icons/encuestas/QrIcon';
-import PdfIcon from '../assets/icons/reportes/PdfIcon';
-import GuardarReporte from '../assets/icons/reportes/GuardarReporte';
-import EncuestaIcon from '../assets/icons/reportes/EncuestaIcon';
-import ReportesIcon from '../assets/icons/reportes/ReportesIcon';
+import useTecnicoView from '../../hooks/useTecnicoView';
+import Combobox from '../ui/Combobox';
+import Logo from '../../assets/logo-white.svg';
+import PoliticaPrivacidad from '../PoliticaPrivacidad';
+import QrIcon from '../../assets/icons/encuestas/QrIcon';
+import PdfIcon from '../../assets/icons/reportes/PdfIcon';
+import GuardarReporte from '../../assets/icons/reportes/GuardarReporte';
+import EncuestaIcon from '../../assets/icons/reportes/EncuestaIcon';
+import ReportesIcon from '../../assets/icons/reportes/ReportesIcon';
 
 const CW = 400;
 const CH = 250;
@@ -34,7 +35,6 @@ export default function TecnicoView() {
     motivoVisitaOtro, setMotivoVisitaOtro,
     setFirmaSvg,
     loading, descargando, guardado, setGuardado,
-    msg, setMsg,
     empresaNombre, sedeNombre,
     guardarReporte, descargarPDF, resetForm, perfil, logout,
     aceptoPrivacidad, setAceptoPrivacidad,
@@ -137,12 +137,11 @@ export default function TecnicoView() {
 
   function irAlPaso2() {
     if (!empresaId || !sedeId) {
-      setMsg({ tipo: 'error', texto: 'Debe seleccionar una empresa y una sede.' });
+      toast.error('Debe seleccionar una empresa y una sede.');
       return;
     }
     setStep(2);
     setCloseAvisoEncuesta(false);
-    setMsg({ tipo: '', texto: '' });
   }
 
   const metaThemeColor = document.querySelector('meta[name="theme-color"]');
@@ -167,17 +166,6 @@ export default function TecnicoView() {
       </header>
 
       <main className="max-w-2xl mx-auto p-4 pb-24 animate-fade-in">
-        {msg.texto && (
-          <div className={`mb-5 p-4 rounded-xl text-sm font-medium flex items-start gap-3 animate-fade-in border ${
-            msg.tipo === 'exito'
-              ? 'bg-green-50 text-green-800 border-green-200'
-              : 'bg-red-50 text-red-800 border-red-200'
-          }`}>
-            <span className="text-lg">{msg.tipo === 'exito' ? '\u2705' : '\u26A0\uFE0F'}</span>
-            <span>{msg.texto}</span>
-          </div>
-        )}
-
         {guardado ? (
           <div className="bg-white rounded-2xl shadow-lg p-8 text-center animate-fade-in border border-gray-100">
             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
@@ -450,7 +438,7 @@ export default function TecnicoView() {
                       </button>
                     </div>
                     <div className="flex gap-6">
-                      <button type="button" onClick={() => { setStep(1); setMsg({ tipo: '', texto: '' }); }}
+                      <button type="button" onClick={() => setStep(1)}
                         className="flex-1 py-2 px-2 rounded-xl font-semibold text-primary-600 border-2 border-primary-600 bg-white hover:bg-orange-50 transition-all active:scale-[0.97] flex items-center justify-center gap-2">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -499,7 +487,7 @@ export default function TecnicoView() {
                 <QRCodeSVG value={qrUrl} size={200} />
               </div>
             </div>
-            <button type="button" onClick={() => { navigator.clipboard.writeText(qrUrl); setMsg({ tipo: 'exito', texto: 'Enlace copiado al portapapeles' }); }}
+            <button type="button" onClick={() => { navigator.clipboard.writeText(qrUrl); toast.success('Enlace copiado al portapapeles'); }}
               className="text-sm text-primary-600 hover:text-primary-700 font-medium mb-4 block mx-auto underline underline-offset-2">
               Copiar enlace
             </button>

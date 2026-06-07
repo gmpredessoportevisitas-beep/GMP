@@ -1,9 +1,10 @@
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Login from './components/Login';
-import TecnicoView from './components/TecnicoView';
-import AdminDashboard from './components/AdminDashboard';
-import EncuestaPublica from './components/EncuestaPublica';
+import Login from './components/ui/Login'
+import TecnicoView from './components/tecnico/TecnicoView';
+import AdminDashboard from './components/admin/AdminDashboard';
+import EncuestaPublica from './components/encuesta/EncuestaPublica';
 import AnimatedWifiIcon from './assets/icons/AnimatedWifiIcon';
 import { Analytics } from "@vercel/analytics/react"
 
@@ -30,6 +31,7 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
+      <Toaster richColors position="top-right" />
       <Analytics />
       <Routes>
         <Route path="/encuesta/:token" element={<EncuestaPublica />} />

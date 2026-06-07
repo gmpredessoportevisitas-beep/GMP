@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import logo from '../assets/logo-white.svg';
-import LogginIcon from '../assets/icons/LogginIcon';
-import EyeIcon from '../assets/icons/EyeIcon';
+import { useAuth } from '../../contexts/AuthContext';
+import logo from '../../assets/logo-white.svg';
+import LogginIcon from '../../assets/icons/LogginIcon';
+import EyeIcon from '../../assets/icons/EyeIcon';
 
 interface LoginProps {
   errorInicial?: string;

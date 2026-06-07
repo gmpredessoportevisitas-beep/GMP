@@ -1,7 +1,7 @@
 interface ButtonCrudProps {
     onClick?: () => void;
-    icon: React.ReactNode;
-    label: string;
+    icon?: React.ReactNode;
+    label?: string;
     className?: string;
     disabled?: boolean;
     type?: "submit" | "reset" | "button";

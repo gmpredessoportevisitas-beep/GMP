@@ -1,13 +1,13 @@
-import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
-import useAdminReportes from '../hooks/useAdminReportes';
-import SearchBar from './SearchBar';
-import FilterChips from './FilterChips';
-import Pagination from './Pagination';
-import TableTh from './TableTh';
-import PageHeader from './PageHeader';
-import PreviewIcon from '../assets/icons/reportes/PreviewIcon';
-import PdfIcon from '../assets/icons/reportes/PdfIcon';
-import EncuestaIcon from '../assets/icons/reportes/EncuestaIcon';
+import AnimatedWifiIcon from '../../assets/icons/AnimatedWifiIcon';
+import useAdminReportes from '../../hooks/admin/useAdminReportes';
+import SearchBar from '../ui/SearchBar';
+import FilterChips from '../ui/FilterChips';
+import Pagination from '../ui/Pagination';
+import TableTh from '../ui/TableTh';
+import PageHeader from '../ui/PageHeader';
+import PreviewIcon from '../../assets/icons/reportes/PreviewIcon';
+import PdfIcon from '../../assets/icons/reportes/PdfIcon';
+import EncuestaIcon from '../../assets/icons/reportes/EncuestaIcon';
 
 const MOTIVOS = [
   { key: 'soporte', label: 'Soporte' },
@@ -21,9 +21,9 @@ export default function AdminReportes() {
   const {
     reportes, totalReportes, loading, error, pagina, setPagina, loadingFilters, loadingEncuesta,
     descargando, previewUrl, previewLoadingId,
-    msg, encuestaData,
+    encuestaData,
     cargar, descargarPDF, previsualizar, cerrarPreview,
-    verEncuesta, cerrarEncuesta, exportarCSV, setMsg,
+    verEncuesta, cerrarEncuesta, exportarCSV,
     LIMIT, tecnicos, empresas,
     searchTerm, setSearchTerm,
     filterEmpresaId, setFilterEmpresaId,
@@ -146,18 +146,6 @@ export default function AdminReportes() {
           </svg>
           {error}
           <button onClick={() => cargar()} className="ml-auto underline font-semibold">Reintentar</button>
-        </div>
-      )}
-      {msg.texto && (
-        <div className={`mb-5 p-4 rounded-xl text-sm font-medium flex items-center gap-3 border ${
-          msg.tipo === 'error' ? 'bg-red-50 text-red-800 border-red-200' :
-          msg.tipo === 'info' ? 'bg-blue-50 text-blue-800 border-blue-200' : ''
-        }`}>
-          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={msg.tipo === 'error' ? 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' : 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'} />
-          </svg>
-          {msg.texto}
-          <button onClick={() => setMsg({ tipo: '', texto: '' })} className="ml-auto text-gray-500 hover:text-gray-700 font-bold">X</button>
         </div>
       )}
       <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Buscar reportes..." />

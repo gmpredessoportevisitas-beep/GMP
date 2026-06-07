@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import { useDebounce } from './useDebounce';
-import { Empresa, EmpresaForm } from '../types';
+import { toast } from 'sonner';
+import Swal from 'sweetalert2';
+import { useAuth } from '../../contexts/AuthContext';
+import { useDebounce } from '../useDebounce';
+import { Empresa, EmpresaForm } from '../../types';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -12,7 +14,6 @@ export default function useAdminEmpresas() {
   const [editId, setEditId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [cargando, setCargando] = useState(true);
-  const [msg, setMsg] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -38,7 +39,6 @@ export default function useAdminEmpresas() {
   const guardar = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setMsg('');
     try {
       const t = await getToken();
       const url = editId ? `${API}/api/admin/empresas/${editId}` : `${API}/api/admin/empresas`;
@@ -49,12 +49,12 @@ export default function useAdminEmpresas() {
         body: JSON.stringify(form),
       });
       if (res.ok) {
-        setMsg(editId ? 'Empresa actualizada.' : 'Empresa creada.');
+        toast.success(editId ? 'Empresa actualizada.' : 'Empresa creada.');
         resetForm();
         cargar();
       } else {
         const err = await res.json().catch(() => ({}));
-        setMsg(err.detail || 'Error al guardar.');
+        toast.error(err.detail || 'Error al guardar.');
       }
     } finally {
       setSaving(false);
@@ -68,13 +68,24 @@ export default function useAdminEmpresas() {
   }, []);
 
   const eliminar = useCallback(async (id: number, nombre: string) => {
-    if (!window.confirm(`Eliminar "${nombre}"? Esta accion no se puede deshacer.`)) return;
+    const result = await Swal.fire({
+      title: `Eliminar "${nombre}"?`,
+      text: 'Esta accion no se puede deshacer.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      confirmButtonText: 'Si, eliminar',
+      cancelButtonText: 'Cancelar',
+    });
+    if (!result.isConfirmed) return;
     try {
       const t = await getToken();
       await fetch(`${API}/api/admin/empresas/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+      toast.success(`"${nombre}" eliminada.`);
       cargar();
     } catch {
-      // ignore
+      toast.error('Error al eliminar la empresa.');
     }
   }, [getToken, cargar]);
 
@@ -92,7 +103,7 @@ export default function useAdminEmpresas() {
   }, [items, debouncedSearch]);
 
   return {
-    items: filteredItems, allItems: items, form, setForm, editId, saving, cargando, msg, setMsg, showForm, setShowForm,
+    items: filteredItems, allItems: items, form, setForm, editId, saving, cargando, showForm, setShowForm,
     cargar, resetForm, guardar, editar, eliminar, searchTerm, setSearchTerm,
   };
 }

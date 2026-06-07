@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../contexts/AuthContext';
 import { Empresa, Sede } from '../types';
 
@@ -29,7 +30,6 @@ export default function useTecnicoView() {
   const [loading, setLoading] = useState(false);
   const [descargando, setDescargando] = useState(false);
   const [guardado, setGuardado] = useState<{ id: number } | null>(null);
-  const [msg, setMsg] = useState<{ tipo: string; texto: string }>({ tipo: '', texto: '' });
 
   const [aceptoPrivacidad, setAceptoPrivacidad] = useState(false);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
@@ -73,10 +73,9 @@ export default function useTecnicoView() {
 
   const guardarReporte = useCallback(async () => {
     setLoading(true);
-    setMsg({ tipo: '', texto: '' });
 
     if (!aceptoPrivacidad) {
-      setMsg({ tipo: 'error', texto: 'Debe aceptar la Politica de Tratamiento de Datos Personales.' });
+      toast.error('Debe aceptar la Politica de Tratamiento de Datos Personales.');
       setLoading(false);
       return;
     }
@@ -106,9 +105,9 @@ export default function useTecnicoView() {
       if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error del servidor'); }
       const data = await res.json();
       setGuardado(data.reporte);
-      setMsg({ tipo: 'exito', texto: 'Reporte guardado exitosamente.' });
+      toast.success('Reporte guardado exitosamente.');
     } catch (err) {
-      setMsg({ tipo: 'error', texto: (err as Error).message });
+      toast.error((err as Error).message);
     } finally {
       setLoading(false);
     }
@@ -127,7 +126,7 @@ export default function useTecnicoView() {
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch {
-      setMsg({ tipo: 'error', texto: 'Error al descargar PDF.' });
+      toast.error('Error al descargar PDF.');
     } finally {
       setDescargando(false);
     }
@@ -145,7 +144,7 @@ export default function useTecnicoView() {
       setQrUrl(data.url);
       setQrModalOpen(true);
     } catch (err) {
-      setMsg({ tipo: 'error', texto: (err as Error).message });
+      toast.error((err as Error).message);
     } finally {
       setQrLoading(false);
     }
@@ -156,7 +155,6 @@ export default function useTecnicoView() {
     setHallazgos(''); setUsoMateriales(false); setMaterialesDetalle('');
     setCambioAntena(false); setSerialAntena('');
     setMotivoVisita('soporte'); setMotivoVisitaOtro(''); setFirmaSvg('');
-    setMsg({ tipo: '', texto: '' });
     setAceptoPrivacidad(false);
   }, []);
 
@@ -175,7 +173,6 @@ export default function useTecnicoView() {
     motivoVisitaOtro, setMotivoVisitaOtro,
     firmaSvg, setFirmaSvg,
     loading, descargando, guardado, setGuardado,
-    msg, setMsg,
     empresaNombre, sedeNombre,
     guardarReporte, descargarPDF, resetForm, perfil, logout,
     aceptoPrivacidad, setAceptoPrivacidad,
