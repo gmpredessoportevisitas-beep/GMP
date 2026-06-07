@@ -8,10 +8,10 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'inline',
-      includeAssets: ['logo.png', 'favicon.svg', 'logo.svg'], 
+      includeAssets: ['logo-192.png', 'logo-512.png', 'logo-maskable.png', 'favicon.svg'],
       manifest: {
-        name: 'Sistema de gestión de reportes',
-        short_name: 'SGR',
+        name: 'Sistema de gestión de servicios',
+        short_name: 'GMP',
         description: 'Sistema de gestión de servicios de campo',
         theme_color: '#D75501',
         background_color: '#D75501',
@@ -21,17 +21,17 @@ export default defineConfig({
         lang: 'es-CO',
         icons: [
           {
-            src: 'logo-white.png',
+            src: 'logo-192.png',
             sizes: '192x192',
             type: 'image/png',
           },
           {
-            src: 'logo-white.png',
+            src: 'logo-512.png',
             sizes: '512x512',
             type: 'image/png',
           },
           {
-            src: 'logo-white.png',
+            src: 'logo-maskable.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

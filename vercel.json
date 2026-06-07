@@ -47,12 +47,16 @@
       "dest": "frontend/workbox-$1.js"
     },
     {
-      "src": "/logo.png",
-      "dest": "frontend/logo.png"
+      "src": "/logo-192.png",
+      "dest": "frontend/logo-192.png"
     },
     {
-      "src": "/logo-white.png",
-      "dest": "frontend/logo-white.png"
+      "src": "/logo-512.png",
+      "dest": "frontend/logo-512.png"
+    },
+    {
+      "src": "/logo-maskable.png",
+      "dest": "frontend/logo-maskable.png"
     },
     {
       "src": "/((?!api/).*)",

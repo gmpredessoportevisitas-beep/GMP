@@ -16,7 +16,7 @@ def login(data: LoginRequest):
     if not SUPABASE_ANON_KEY:
         raise HTTPException(500, "SUPABASE_ANON_KEY no configurada en el servidor.")
     try:
-        email = f"{data.username}@gmp.com"
+        email = f"{data.username.strip()}@gmp.com"
         body = json.dumps({"email": email, "password": data.password}).encode()
         req = Request(
             f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
