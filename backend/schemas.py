@@ -33,6 +33,10 @@ class EncuestaRespuestaItem(BaseModel):
     valor: int = Field(..., ge=1, le=5)
 
 
+class PasswordUpdate(BaseModel):
+    password: str = Field(..., min_length=6, max_length=100)
+
+
 class ReporteCreate(BaseModel):
     empresa_id: int
     sede_id: int

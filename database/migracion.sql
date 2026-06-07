@@ -111,3 +111,125 @@ FROM reportes r
     LEFT JOIN perfiles p ON r.tecnico_id = p.id
     LEFT JOIN empresas e ON r.empresa_id = e.id
     LEFT JOIN sedes s ON r.sede_id = s.id;
+
+-- ============================================================
+-- MIGRACIÓN: Habilitar RLS y crear políticas restrictivas
+-- Opción A: Máxima seguridad - todo acceso vía backend (service_role)
+-- ============================================================
+
+-- 1. HABILITAR RLS EN TODAS LAS TABLAS
+ALTER TABLE public.empresas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.sedes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.perfiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reportes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.encuesta_preguntas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.encuestas_satisfaccion ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.encuesta_respuestas ENABLE ROW LEVEL SECURITY;
+
+-- 2. POLÍTICAS POR TABLA
+
+-- empresas: sin acceso directo
+CREATE POLICY "Sin acceso directo a empresas"
+ON public.empresas FOR ALL
+USING (false) WITH CHECK (false);
+
+-- sedes: sin acceso directo
+CREATE POLICY "Sin acceso directo a sedes"
+ON public.sedes FOR ALL
+USING (false) WITH CHECK (false);
+
+-- perfiles: solo ver tu propio perfil
+CREATE POLICY "Ver propio perfil"
+ON public.perfiles FOR SELECT
+USING (id = auth.uid());
+
+CREATE POLICY "Sin escritura directa en perfiles"
+ON public.perfiles FOR ALL
+USING (false) WITH CHECK (false);
+
+-- reportes: técnicos ven los propios, admins ven todos
+CREATE POLICY "Ver reportes propios o todos si admin"
+ON public.reportes FOR SELECT
+USING (
+    tecnico_id = auth.uid()
+    OR EXISTS (
+        SELECT 1 FROM public.perfiles
+        WHERE id = auth.uid() AND rol = 'admin'
+    )
+);
+
+CREATE POLICY "Sin escritura directa en reportes"
+ON public.reportes FOR ALL
+USING (false) WITH CHECK (false);
+
+-- encuesta_preguntas: sin acceso directo (todo vía backend)
+CREATE POLICY "Sin acceso directo a preguntas"
+ON public.encuesta_preguntas FOR ALL
+USING (false) WITH CHECK (false);
+
+-- encuestas_satisfaccion: sin acceso directo
+CREATE POLICY "Sin acceso directo a encuestas"
+ON public.encuestas_satisfaccion FOR ALL
+USING (false) WITH CHECK (false);
+
+-- encuesta_respuestas: sin acceso directo
+CREATE POLICY "Sin acceso directo a respuestas"
+ON public.encuesta_respuestas FOR ALL
+USING (false) WITH CHECK (false);
+
+-- 3. SECURIZAR FUNCIÓN TRIGGER
+REVOKE EXECUTE ON FUNCTION public.handle_new_user() FROM anon, authenticated;
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO public.perfiles (id, email, nombre_completo, rol)
+    VALUES (
+        NEW.id,
+        NEW.email,
+        COALESCE(NEW.raw_user_meta_data ->> 'nombre_completo', ''),
+        COALESCE(NEW.raw_user_meta_data ->> 'rol', 'tecnico')
+    );
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- 4. CAMBIAR VISTA A SECURITY INVOKER
+CREATE OR REPLACE VIEW public.vista_reportes_busqueda
+SECURITY INVOKER AS
+SELECT r.id,
+    r.fecha_hora,
+    r.empresa_id,
+    r.sede_id,
+    r.tecnico_id,
+    r.nombre_asesor,
+    r.telefono_asesor,
+    r.hallazgos,
+    r.uso_materiales,
+    r.materiales_detalle,
+    r.motivo_visita,
+    r.motivo_visita_otro,
+    r.firma_vector,
+    r.creado_en,
+    r.autorizacion_datos,
+    r.fecha_autorizacion,
+    r.version_politica,
+    r.cambio_antena,
+    r.serial_antena,
+    r.token_encuesta,
+    p.nombre_completo AS tecnico_nombre,
+    e.nombre AS empresa_nombre,
+    s.nombre AS sede_nombre,
+    CONCAT_WS(' ',
+        r.nombre_asesor,
+        r.hallazgos,
+        r.materiales_detalle,
+        r.serial_antena,
+        p.nombre_completo,
+        e.nombre,
+        s.nombre
+    ) AS texto_busqueda
+FROM reportes r
+    LEFT JOIN perfiles p ON r.tecnico_id = p.id
+    LEFT JOIN empresas e ON r.empresa_id = e.id
+    LEFT JOIN sedes s ON r.sede_id = e.id;

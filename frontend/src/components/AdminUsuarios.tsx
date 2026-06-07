@@ -1,3 +1,4 @@
+import { useState, Fragment } from 'react';
 import AnimatedWifiIcon from '../assets/icons/AnimatedWifiIcon';
 import useAdminUsuarios from '../hooks/useAdminUsuarios';
 import SearchBar from './SearchBar';
@@ -8,14 +9,19 @@ import CloseUsuarioIcon from '../assets/icons/usuarios/CloseUsuarioIcon';
 import AddUsuarioIcon from '../assets/icons/usuarios/AddUsuarioIcon';
 import ButtonCrud from './ButtonCrud';
 import CheckUsuarioIcon from '../assets/icons/usuarios/CheckUsuarioIcon';
+import EyeIcon from '../assets/icons/EyeIcon';
 
 
 export default function AdminUsuarios() {
   const {
     items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
-    resetForm, crearUsuario, toggleActivo,
+    resetForm, crearUsuario, toggleActivo, cambiarPassword,
+    editingPasswordId, setEditingPasswordId, newPassword, setNewPassword,
     searchTerm, setSearchTerm, filtroRol, setFiltroRol, filtroEstado, setFiltroEstado,
   } = useAdminUsuarios();
+
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
 
   const rolChips = [
     { key: 'all', label: 'Todos', active: filtroRol === null },
@@ -90,8 +96,14 @@ export default function AdminUsuarios() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Contrasena <span className="text-red-500">*</span></label>
-              <input placeholder="Minimo 6 caracteres" type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})} required minLength={6}
-                className="text-sm w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+              <div className="relative">
+                <input placeholder="Minimo 6 caracteres" type={showNewPassword ? 'text' : 'password'} value={form.password} onChange={e => setForm({...form, password: e.target.value})} required minLength={6}
+                  className="text-sm w-full px-4 pr-12 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none bg-gray-50 focus:bg-white transition-all" />
+                <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                  <EyeIcon isOpen={showNewPassword} size={20}/>
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Rol</label>
@@ -134,12 +146,13 @@ export default function AdminUsuarios() {
                     <TableTh className="text-white/80">Usuario</TableTh>
                     <TableTh className="text-white/80">Rol</TableTh>
                     <TableTh className="text-white/80">Estado</TableTh>
-                    <TableTh className="text-white/80 text-center">Accion</TableTh>
+                    <TableTh className="text-white/80 text-center">Acciones</TableTh>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {items.map((i) => (
-                  <tr key={i.id} className="hover:bg-orange-50/50 transition-colors">
+                 {items.map((i) => (
+                   <Fragment key={i.id}>
+                   <tr className="hover:bg-orange-50/50 transition-colors">
                     <td className="px-5 py-4 text-sm font-semibold text-gray-800">{i.nombre_completo}</td>
                     <td className="px-5 py-4 text-sm text-gray-500">{i.username}</td>
                     <td className="px-5 py-4 text-sm">
@@ -157,17 +170,80 @@ export default function AdminUsuarios() {
                         {i.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="px-5 py-4 text-center">
-                      <button onClick={() => toggleActivo(i.id)}
-                        className={`py-1.5 px-3 text-xs font-semibold rounded-lg transition-all ${
-                          i.activo
-                            ? 'text-red-600 bg-red-50 hover:bg-red-100'
-                            : 'text-green-600 bg-green-50 hover:bg-green-100'
-                        }`}>
-                        {i.activo ? 'Desactivar' : 'Activar'}
-                      </button>
+                    <td className="px-5 py-3 text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        <button onClick={() => toggleActivo(i.id)}
+                          title={i.activo ? 'Desactivar usuario' : 'Activar usuario'}
+                          className={`py-2 px-2 text-xs font-semibold rounded-lg transition-all ${
+                            i.activo
+                              ? 'text-red-600 bg-red-50 hover:bg-red-100'
+                              : 'text-green-600 bg-green-50 hover:bg-green-100'
+                          }`}>
+                          {i.activo ? 
+                            (<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-user-off" height={24} strokeWidth={2} width={24} viewBox="0 0 24 24"><path fill="none" stroke="none" d="M0 0h24v24H0z"/><path d="M8.18 8.189a4.01 4.01 0 0 0 2.616 2.627m3.507-.545a4 4 0 1 0-5.59-5.552M6 21v-2a4 4 0 0 1 4-4h4c.412 0 .81.062 1.183.178m2.633 2.618c.12.38.184.785.184 1.204v2M3 3l18 18"/></svg> ) :
+                            (<svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-user-check" height={24} strokeWidth={2} width={24} viewBox="0 0 24 24"><path fill="none" stroke="none" d="M0 0h24v24H0z"/><path d="M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0M6 21v-2a4 4 0 0 1 4-4h4m1 4 2 2 4-4"/></svg> )
+                          }
+                        </button>
+                        <button onClick={() => {
+                          if (editingPasswordId === i.id) {
+                            setEditingPasswordId(null);
+                            setNewPassword('');
+                          } else {
+                            setEditingPasswordId(i.id);
+                            setNewPassword('');
+                            setShowEditPassword(false);
+                          }
+                        }}
+                          title="Cambiar contrasena"
+                          className={`p-2 text-xs font-semibold rounded-lg transition-all ${
+                            editingPasswordId === i.id
+                              ? 'bg-[#FDE6D4] text-[#CE6400]'
+                              : 'bg-[#FDE6D4] text-[#CE6400]'
+                          }`}>
+                          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" className="icon icon-tabler icons-tabler-outline icon-tabler-user-key">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                            <path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+                            <path d="M6 21v-2a4 4 0 0 1 4 -4h5" />
+                            <path d="M18.5 18.5l-3.5 3.5l-1.5 -1.5" />
+                            <path d="M18.554 18.414a2 2 0 1 1 2.828 -2.828a2 2 0 0 1 -2.828 2.828" />
+                            <path d="M16 19l1 1" />
+                          </svg>
+                        </button>
+                      </div>
                     </td>
                   </tr>
+                  {editingPasswordId === i.id && (
+                    <tr key={`pw-${i.id}`} className="bg-blue-50/30">
+                      <td colSpan={5} className="px-5 py-3">
+                        <div className="flex items-center gap-3 justify-center">
+                          <span className="text-sm font-semibold text-gray-700 whitespace-nowrap">Nueva contrasena para {i.nombre_completo}:</span>
+                          <div className="relative flex-1 max-w-xs">
+                            <input
+                              type={showEditPassword ? 'text' : 'password'}
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              placeholder="Minimo 6 caracteres"
+                              minLength={6}
+                              className="text-sm w-full px-3 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            />
+                            <button type="button" onClick={() => setShowEditPassword(!showEditPassword)} tabIndex={-1}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-1">
+                              <EyeIcon isOpen={showEditPassword} size={20}/>
+                            </button>
+                          </div>
+                          <button onClick={() => cambiarPassword(i.id)} disabled={saving}
+                            className="py-2 px-4 text-xs font-semibold rounded-lg bg-gradient-to-r from-primary-600 to-primary-700 text-white disabled:opacity-50 transition-all whitespace-nowrap">
+                            {saving ? 'Guardando...' : 'Guardar'}
+                          </button>
+                          <button onClick={() => { setEditingPasswordId(null); setNewPassword(''); }}
+                            className="py-2 px-3 text-xs font-semibold rounded-lg bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all whitespace-nowrap">
+                            Cancelar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 ))}
                 {items.length === 0 && (
                   <tr>

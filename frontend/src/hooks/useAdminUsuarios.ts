@@ -16,6 +16,8 @@ export default function useAdminUsuarios() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filtroRol, setFiltroRol] = useState<string | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<string | null>(null);
+  const [editingPasswordId, setEditingPasswordId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -71,6 +73,32 @@ export default function useAdminUsuarios() {
     }
   }, [getToken, cargar]);
 
+  const cambiarPassword = useCallback(async (userId: string) => {
+    if (!newPassword || newPassword.length < 6) {
+      setMsg('La contrasena debe tener al menos 6 caracteres.');
+      return;
+    }
+    setSaving(true); setMsg('');
+    try {
+      const t = await getToken();
+      const res = await fetch(`${API}/api/admin/usuarios/${userId}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        body: JSON.stringify({ password: newPassword }),
+      });
+      if (res.ok) {
+        setMsg('Contrasena actualizada correctamente.');
+        setEditingPasswordId(null);
+        setNewPassword('');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setMsg(err.detail || 'Error al cambiar contrasena.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [getToken, newPassword]);
+
   const debouncedSearch = useDebounce(searchTerm, 300);
   const filteredItems = useMemo(() => {
     let result = items;
@@ -89,7 +117,8 @@ export default function useAdminUsuarios() {
 
   return {
     items: filteredItems, allItems: items, form, setForm, saving, cargando, msg, setMsg, showForm, setShowForm,
-    cargar, resetForm, crearUsuario, toggleActivo,
+    cargar, resetForm, crearUsuario, toggleActivo, cambiarPassword,
+    editingPasswordId, setEditingPasswordId, newPassword, setNewPassword,
     searchTerm, setSearchTerm, filtroRol, setFiltroRol, filtroEstado, setFiltroEstado,
   };
 }

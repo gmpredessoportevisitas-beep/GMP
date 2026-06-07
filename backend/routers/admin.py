@@ -2,7 +2,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from config import supabase
-from schemas import EmpresaCreate, SedeCreate, UsuarioCreate
+from schemas import EmpresaCreate, SedeCreate, UsuarioCreate, PasswordUpdate
 from deps import solo_admin
 from utils import ahora_iso
 
@@ -130,3 +130,12 @@ async def toggle_usuario(user_id: str, admin: dict = Depends(solo_admin)):
     nuevo = not perfil.data[0]["activo"]
     supabase.table("perfiles").update({"activo": nuevo}).eq("id", user_id).execute()
     return {"activo": nuevo}
+
+
+@router.put("/usuarios/{user_id}/password")
+async def cambiar_password(user_id: str, data: PasswordUpdate, admin: dict = Depends(solo_admin)):
+    try:
+        supabase.auth.admin.update_user_by_id(user_id, {"password": data.password})
+    except Exception as e:
+        raise HTTPException(500, f"Error al cambiar contrasena: {str(e)}")
+    return {"ok": True}
