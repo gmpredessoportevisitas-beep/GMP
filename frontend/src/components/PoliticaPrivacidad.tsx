@@ -32,10 +32,10 @@ export default function PoliticaPrivacidad({setPrivacyOpen}: PoliticaPrivacidadP
                 <section>
                   <h3 className="text-base font-bold text-primary-700 mb-2">1. Identificacion del Responsable del Tratamiento</h3>
                   <p className="mb-1"><strong>Razon Social:</strong>GMP REDES</p>
-                  <p className="mb-1"><strong>NIT:</strong> [NIT]</p>
-                  <p className="mb-1"><strong>Direccion:</strong> [DIRECCION]</p>
-                  <p className="mb-1"><strong>Correo Electronico:</strong> [CORREO_CONTACTO]</p>
-                  <p className="mb-1"><strong>Telefono:</strong> [TELEFONO]</p>
+                  <p className="mb-1"><strong>NIT:</strong>901492982-6</p>
+                  <p className="mb-1"><strong>Direccion:</strong>CALLE 44 N 29B - 29 EDIFICIO MIRADOR DE VILLAVENTO TORRE 2 APTO 1107</p>
+                  <p className="mb-1"><strong>Correo Electronico:</strong>gmpredes@gmail.com</p>
+                  <p className="mb-1"><strong>Telefono:</strong>3204487402</p>
                 </section>
 
                 <section>
