@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import AnimatedWifiIcon from '../../assets/icons/AnimatedWifiIcon';
 import PageHeader from '../ui/PageHeader';
 import type { Empresa } from '../../types';
+import ExcelIcon from '../../assets/icons/reportes/ExcelIcon';
 
 const API = import.meta.env.VITE_API_URL ?? '';
 
@@ -80,11 +81,9 @@ export default function AdminDashboardView() {
             {exporting ? (
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent" />
             ) : (
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <ExcelIcon />
             )}
-            Exportar Excel
+            Exportar
           </button>
         }
       />
