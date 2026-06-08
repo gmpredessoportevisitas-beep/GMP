@@ -111,24 +111,26 @@ async def crear_encuesta_publica(token: str, data: EncuestaCreate):
                 .execute())
     encuesta_id = encuesta.data[0]["id"]
 
-    respuestas = []
-    for r_item in data.respuestas:
-        pregunta = (supabase.table("encuesta_preguntas")
-                    .select("id")
-                    .eq("id", r_item.pregunta_id)
-                    .eq("activa", True)
-                    .execute())
-        if not pregunta.data:
-            continue
-        respuestas.append({
-            "encuesta_id": encuesta_id,
-            "pregunta_id": r_item.pregunta_id,
-            "valor": r_item.valor,
-            "creado_en": ahora_iso(),
-        })
+    pregunta_ids = [r.pregunta_id for r in data.respuestas]
+    if pregunta_ids:
+        validas = (supabase.table("encuesta_preguntas")
+                   .select("id")
+                   .in_("id", pregunta_ids)
+                   .eq("activa", True)
+                   .execute())
+        ids_validos = {p["id"] for p in validas.data}
 
-    if respuestas:
-        supabase.table("encuesta_respuestas").insert(respuestas).execute()
+        respuestas = [
+            {
+                "encuesta_id": encuesta_id,
+                "pregunta_id": r.pregunta_id,
+                "valor": r.valor,
+                "creado_en": ahora_iso(),
+            }
+            for r in data.respuestas if r.pregunta_id in ids_validos
+        ]
+        if respuestas:
+            supabase.table("encuesta_respuestas").insert(respuestas).execute()
 
     return {"mensaje": "Encuesta registrada exitosamente", "encuesta_id": encuesta_id}
 
@@ -152,20 +154,26 @@ async def crear_encuesta(reporte_id: int, data: EncuestaCreate):
                 .execute())
     encuesta_id = encuesta.data[0]["id"]
 
-    respuestas = []
-    for r_item in data.respuestas:
-        pregunta = supabase.table("encuesta_preguntas").select("id").eq("id", r_item.pregunta_id).eq("activa", True).execute()
-        if not pregunta.data:
-            continue
-        respuestas.append({
-            "encuesta_id": encuesta_id,
-            "pregunta_id": r_item.pregunta_id,
-            "valor": r_item.valor,
-            "creado_en": ahora_iso(),
-        })
+    pregunta_ids = [r.pregunta_id for r in data.respuestas]
+    if pregunta_ids:
+        validas = (supabase.table("encuesta_preguntas")
+                   .select("id")
+                   .in_("id", pregunta_ids)
+                   .eq("activa", True)
+                   .execute())
+        ids_validos = {p["id"] for p in validas.data}
 
-    if respuestas:
-        supabase.table("encuesta_respuestas").insert(respuestas).execute()
+        respuestas = [
+            {
+                "encuesta_id": encuesta_id,
+                "pregunta_id": r.pregunta_id,
+                "valor": r.valor,
+                "creado_en": ahora_iso(),
+            }
+            for r in data.respuestas if r.pregunta_id in ids_validos
+        ]
+        if respuestas:
+            supabase.table("encuesta_respuestas").insert(respuestas).execute()
 
     return {"mensaje": "Encuesta registrada exitosamente", "encuesta_id": encuesta_id}
 
@@ -173,7 +181,7 @@ async def crear_encuesta(reporte_id: int, data: EncuestaCreate):
 @router.get("/reportes/{reporte_id}/encuesta")
 async def obtener_encuesta(reporte_id: int, usuario: dict = Depends(get_usuario_actual)):
     encuesta = (supabase.table("encuestas_satisfaccion")
-                .select("*")
+                .select("id, reporte_id, observaciones, creado_en")
                 .eq("reporte_id", reporte_id)
                 .execute())
     if not encuesta.data:
@@ -198,7 +206,7 @@ async def listar_encuestas(
     usuario: dict = Depends(solo_admin),
 ):
     result = (supabase.table("encuestas_satisfaccion")
-              .select("*, reportes(id, fecha_hora, empresas(nombre), sedes(nombre))")
+              .select("id, reporte_id, observaciones, creado_en, reportes(id, fecha_hora, empresas(nombre), sedes(nombre))")
               .order("creado_en", desc=True)
               .range(offset, offset + limit - 1)
               .execute())

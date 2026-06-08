@@ -2,27 +2,14 @@ import { createContext, useContext, useState, useEffect, useCallback, ReactNode 
 import { Perfil } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL ?? '';
-const TOKEN_KEY = 'gmp_token';
-
-function getStoredToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
-
-function setStoredToken(token: string): void {
-  localStorage.setItem(TOKEN_KEY, token);
-}
-
-function removeStoredToken(): void {
-  localStorage.removeItem(TOKEN_KEY);
-}
 
 interface AuthContextType {
   perfil: Perfil | null;
   loading: boolean;
   error: string;
-  login: (username: string, password: string) => Promise<{ access_token: string; perfil: Perfil }>;
+  login: (username: string, password: string) => Promise<{ perfil: Perfil }>;
   logout: () => void;
-  getToken: () => string;
+  authFetch: (url: string, init?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -32,33 +19,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const cargarPerfil = useCallback(async (token: string) => {
-    if (!token) {
-      setPerfil(null);
-      setLoading(false);
-      return;
-    }
+  const handleUnauthorized = useCallback(() => {
+    setPerfil(null);
+    setError('Tu sesion ha expirado. Por favor, inicia sesion nuevamente.');
+  }, []);
 
+  const authFetch = useCallback(async (url: string, init?: RequestInit): Promise<Response> => {
+    const res = await fetch(url, { ...init, credentials: 'include' });
+    if (res.status === 401) {
+      handleUnauthorized();
+    }
+    return res;
+  }, [handleUnauthorized]);
+
+  const cargarPerfil = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/me`, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const res = await authFetch(`${API_URL}/api/auth/me`);
       if (res.ok) {
         const data = await res.json() as Perfil;
         setPerfil(data);
         setError('');
       } else {
-        removeStoredToken();
         setPerfil(null);
-        if (res.status === 401) {
-          setError('Tu sesion ha expirado o es invalida. Por favor, inicia sesion nuevamente.');
-        } else if (res.status === 403) {
+        if (res.status === 403) {
           setError('Tu usuario no tiene un perfil asignado. Contacta al administrador.');
-        } else {
+        } else if (res.status !== 401) {
           setError(`Error en el servidor (${res.status}). Intentalo mas tarde.`);
         }
       }
@@ -68,15 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [authFetch]);
 
   useEffect(() => {
-    const token = getStoredToken();
-    if (token) {
-      cargarPerfil(token);
-    } else {
-      setLoading(false);
-    }
+    cargarPerfil();
   }, [cargarPerfil]);
 
   async function login(username: string, password: string) {
@@ -84,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -95,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       const data = await res.json();
-      setStoredToken(data.access_token);
       setPerfil(data.perfil);
       return data;
     } catch (err) {
@@ -106,18 +87,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  function logout() {
-    removeStoredToken();
+  async function logout() {
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch {
+      // ignore
+    }
     setPerfil(null);
     setError('');
   }
 
-  function getToken(): string {
-    return getStoredToken() || '';
-  }
-
   return (
-    <AuthContext.Provider value={{ perfil, loading, error, login, logout, getToken }}>
+    <AuthContext.Provider value={{ perfil, loading, error, login, logout, authFetch }}>
       {children}
     </AuthContext.Provider>
   );

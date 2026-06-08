@@ -18,3 +18,9 @@ for var, name in [
         raise RuntimeError(f"Variable de entorno {name} es obligatoria.")
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+
+from gotrue._sync.gotrue_client import SyncGoTrueClient as _GoTrue
+auth_client = _GoTrue(
+    url=f"{SUPABASE_URL}/auth/v1",
+    headers={"apikey": SUPABASE_ANON_KEY},
+)

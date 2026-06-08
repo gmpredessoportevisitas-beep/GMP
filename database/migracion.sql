@@ -232,4 +232,4 @@ SELECT r.id,
 FROM reportes r
     LEFT JOIN perfiles p ON r.tecnico_id = p.id
     LEFT JOIN empresas e ON r.empresa_id = e.id
-    LEFT JOIN sedes s ON r.sede_id = e.id;
+    LEFT JOIN sedes s ON r.sede_id = s.id;

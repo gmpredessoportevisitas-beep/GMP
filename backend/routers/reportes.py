@@ -17,6 +17,7 @@ async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario
     row["tecnico_id"] = usuario["id"]
     row["fecha_hora"] = ahora_iso()
     row["creado_en"] = ahora_iso()
+    row["token_encuesta"] = str(uuid.uuid4())
 
     if data.autorizacion_datos:
         row["fecha_autorizacion"] = ahora_iso()
@@ -27,10 +28,6 @@ async def crear_reporte(data: ReporteCreate, usuario: dict = Depends(get_usuario
 
     result = supabase.table("reportes").insert(row).execute()
     reporte = result.data[0]
-
-    token = str(uuid.uuid4())
-    supabase.table("reportes").update({"token_encuesta": token}).eq("id", reporte["id"]).execute()
-    reporte["token_encuesta"] = token
 
     if data.encuesta_respuestas:
         encuesta = (supabase.table("encuestas_satisfaccion")
@@ -66,7 +63,7 @@ async def listar_reportes(
     usuario: dict = Depends(get_usuario_actual),
 ):
     q = (supabase.from_("vista_reportes_busqueda")
-        .select("*", count="exact")
+        .select("id, fecha_hora, empresa_id, sede_id, tecnico_id, nombre_asesor, telefono_asesor, hallazgos, uso_materiales, materiales_detalle, motivo_visita, motivo_visita_otro, creado_en, autorizacion_datos, fecha_autorizacion, version_politica, cambio_antena, serial_antena, token_encuesta, tecnico_nombre, empresa_nombre, sede_nombre, texto_busqueda", count="exact")
         .order("fecha_hora", desc=True))
         
     if usuario["rol"] != "admin":
@@ -93,7 +90,7 @@ async def listar_reportes(
 @router.get("/reportes/{reporte_id}/pdf")
 async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actual)):
     result = (supabase.table("reportes")
-              .select("*, empresas(nombre), sedes(nombre, direccion), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
+              .select("id, fecha_hora, empresa_id, sede_id, tecnico_id, nombre_asesor, telefono_asesor, hallazgos, uso_materiales, materiales_detalle, motivo_visita, motivo_visita_otro, firma_vector, cambio_antena, serial_antena, empresas(nombre), sedes(nombre, direccion), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
               .eq("id", reporte_id)
               .execute())
     if not result.data:
@@ -121,7 +118,7 @@ async def generar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actua
 @router.get("/reportes/{reporte_id}/preview-pdf")
 async def previsualizar_pdf(reporte_id: int, usuario: dict = Depends(get_usuario_actual)):
     result = (supabase.table("reportes")
-              .select("*, empresas(nombre), sedes(nombre, direccion), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
+              .select("id, fecha_hora, empresa_id, sede_id, tecnico_id, nombre_asesor, telefono_asesor, hallazgos, uso_materiales, materiales_detalle, motivo_visita, motivo_visita_otro, firma_vector, cambio_antena, serial_antena, empresas(nombre), sedes(nombre, direccion), perfiles!reportes_tecnico_id_fkey(nombre_completo, email)")
               .eq("id", reporte_id)
               .execute())
     if not result.data:

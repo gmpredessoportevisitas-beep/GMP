@@ -8,7 +8,7 @@ import { Empresa, EmpresaForm } from '../../types';
 const API = import.meta.env.VITE_API_URL ?? '';
 
 export default function useAdminEmpresas() {
-  const { getToken } = useAuth();
+  const { authFetch } = useAuth();
   const [items, setItems] = useState<Empresa[]>([]);
   const [form, setForm] = useState<EmpresaForm>({ nombre: '', nit: '', direccion: '', telefono: '', email: '' });
   const [editId, setEditId] = useState<number | null>(null);
@@ -20,13 +20,12 @@ export default function useAdminEmpresas() {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } });
+      const res = await authFetch(`${API}/api/admin/empresas`);
       if (res.ok) setItems(await res.json() as Empresa[]);
     } finally {
       setCargando(false);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -40,12 +39,11 @@ export default function useAdminEmpresas() {
     e.preventDefault();
     setSaving(true);
     try {
-      const t = await getToken();
       const url = editId ? `${API}/api/admin/empresas/${editId}` : `${API}/api/admin/empresas`;
       const method = editId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       if (res.ok) {
@@ -59,7 +57,7 @@ export default function useAdminEmpresas() {
     } finally {
       setSaving(false);
     }
-  }, [getToken, editId, form, resetForm, cargar]);
+  }, [authFetch, editId, form, resetForm, cargar]);
 
   const editar = useCallback((item: Empresa) => {
     setEditId(item.id);
@@ -80,14 +78,13 @@ export default function useAdminEmpresas() {
     });
     if (!result.isConfirmed) return;
     try {
-      const t = await getToken();
-      await fetch(`${API}/api/admin/empresas/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+      await authFetch(`${API}/api/admin/empresas/${id}`, { method: 'DELETE' });
       toast.success(`"${nombre}" eliminada.`);
       cargar();
     } catch {
       toast.error('Error al eliminar la empresa.');
     }
-  }, [getToken, cargar]);
+  }, [authFetch, cargar]);
 
   const debouncedSearch = useDebounce(searchTerm, 300);
   const filteredItems = useMemo(() => {

@@ -8,7 +8,7 @@ const API = import.meta.env.VITE_API_URL ?? '';
 const LIMIT = 20;
 
 export default function useAdminReportes() {
-  const { getToken } = useAuth();
+  const { authFetch } = useAuth();
   const [reportes, setReportes] = useState<ReporteVista[]>([]);
   const [totalReportes, setTotalReportes] = useState(0);
   const [tecnicos, setTecnicos] = useState<Perfil[]>([]);
@@ -34,7 +34,6 @@ export default function useAdminReportes() {
   const cargar = useCallback(async () => {
     setLoading(true); setError('');
     try {
-      const t = await getToken();
       const params = new URLSearchParams({ limit: String(LIMIT), offset: String(pagina * LIMIT) });
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (filterEmpresaId !== null) params.set('empresa_id', String(filterEmpresaId));
@@ -43,29 +42,28 @@ export default function useAdminReportes() {
       if (fechaInicio) params.set('fecha_inicio', fechaInicio);
       if (fechaFin) params.set('fecha_fin', fechaFin);
 
-      const res = await fetch(`${API}/api/reportes?${params}`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
+      const res = await authFetch(`${API}/api/reportes?${params}`);
       if (!res.ok) throw new Error(`Error ${res.status}`);
       const data = await res.json() as PaginatedResponse<ReporteVista>;
       setReportes(data.items);
       setTotalReportes(data.total);
     } catch (err) {
-      setError((err as Error).message);
+      if ((err as Error).message !== '401') {
+        setError((err as Error).message);
+      }
     } finally {
       setLoading(false);
     }
-  }, [getToken, pagina, debouncedSearch, filterEmpresaId, filterTecnicoId, filterMotivo, fechaInicio, fechaFin]);
+  }, [authFetch, pagina, debouncedSearch, filterEmpresaId, filterTecnicoId, filterMotivo, fechaInicio, fechaFin]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
   const cargarFiltros = useCallback(async () => {
     setLoadingFilters(true);
     try {
-      const t = await getToken();
       const [rTec, rEmp] = await Promise.all([
-        fetch(`${API}/api/admin/usuarios?solo_tecnicos=true`, { headers: { Authorization: `Bearer ${t}` } }),
-        fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } }),
+        authFetch(`${API}/api/admin/usuarios?solo_tecnicos=true`),
+        authFetch(`${API}/api/admin/empresas`),
       ]);
       if (rTec.ok) setTecnicos(await rTec.json() as Perfil[]);
       if (rEmp.ok) setEmpresas(await rEmp.json() as Empresa[]);
@@ -74,17 +72,14 @@ export default function useAdminReportes() {
     } finally {
       setLoadingFilters(false);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   useEffect(() => { cargarFiltros(); }, [cargarFiltros]);
 
   const descargarPDF = useCallback(async (id: number) => {
     setDescargando(id);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes/${id}/pdf`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
+      const res = await authFetch(`${API}/api/reportes/${id}/pdf`);
       if (!res.ok) throw new Error('Error al generar PDF');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -100,15 +95,12 @@ export default function useAdminReportes() {
     } finally {
       setDescargando(null);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   const previsualizar = useCallback(async (id: number) => {
     setPreviewLoadingId(id);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes/${id}/preview-pdf`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
+      const res = await authFetch(`${API}/api/reportes/${id}/preview-pdf`);
       if (!res.ok) throw new Error('Error al generar previsualización');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -118,7 +110,7 @@ export default function useAdminReportes() {
     } finally {
       setPreviewLoadingId(null);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   const cerrarPreview = useCallback(() => {
     if (previewUrl) { window.URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
@@ -128,10 +120,7 @@ export default function useAdminReportes() {
     setEncuestaData(null);
     setLoadingEncuesta(reporteId);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes/${reporteId}/encuesta`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
+      const res = await authFetch(`${API}/api/reportes/${reporteId}/encuesta`);
       if (!res.ok) {
         if (res.status === 404) { toast.info('Este reporte no tiene encuesta registrada.'); }
         else throw new Error('Error al consultar encuesta');
@@ -143,7 +132,7 @@ export default function useAdminReportes() {
     } finally {
       setLoadingEncuesta(null);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   const cerrarEncuesta = useCallback(() => { setEncuestaData(null); }, []);
 

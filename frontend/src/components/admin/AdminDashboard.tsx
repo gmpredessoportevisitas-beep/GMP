@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import AdminDashboardView from './AdminDashboardView';
 import AdminEmpresas from './AdminEmpresas';
 import AdminSedes from './AdminSedes';
 import AdminUsuarios from './AdminUsuarios';
@@ -10,6 +11,7 @@ import EmpresaIcon from '../../assets/icons/empresas/EmpresaIcon';
 import SedesIcon from '../../assets/icons/sedes/SedesIcon';
 import EncuestasIcon from '../../assets/icons/encuestas/EncuestasIcon';
 import ReportesIcon from '../../assets/icons/reportes/ReportesIcon';
+import DashboardIcon from '../../assets/icons/dashboard/DashboardIcon';
 import logo from '../../assets/logo-white.svg';
 import LogoutIcon from '../../assets/icons/LogoutIcon';
 import type { Tab } from '../../types';
@@ -21,6 +23,7 @@ const TABS: Tab[] = [
   { id: 'empresas', label: 'Empresas', icon: <EmpresaIcon />},
   { id: 'sedes', label: 'Sedes', icon: <SedesIcon />},
   { id: 'usuarios', label: 'Usuarios', icon: <UsuarioIcon />},
+  { id: 'dashboard', label: 'Dashboard', icon:  <DashboardIcon />,},
   { id: 'encuestas', label: 'Encuesta', icon: <EncuestasIcon />},
   ];
 
@@ -119,6 +122,7 @@ export default function AdminDashboard() {
           {tab === 'empresas' && <AdminEmpresas />}
           {tab === 'sedes' && <AdminSedes />}
           {tab === 'usuarios' && <AdminUsuarios />}
+          {tab === 'dashboard' && <AdminDashboardView />}
           {tab === 'encuestas' && <AdminEncuestaPreguntas />}
         </main>
       </div>

@@ -7,7 +7,7 @@ const API = import.meta.env.VITE_API_URL ?? '';
 export const VERSION_POLITICA = '1.0';
 
 export default function useTecnicoView() {
-  const { getToken, perfil, logout } = useAuth();
+  const { authFetch, perfil, logout } = useAuth();
 
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [sedes, setSedes] = useState<Sede[]>([]);
@@ -38,28 +38,24 @@ export default function useTecnicoView() {
 
   useEffect(() => {
     (async () => {
-      const t = await getToken();
-      const rE = await fetch(`${API}/api/catalogos/empresas`, { headers: { Authorization: `Bearer ${t}` } });
+      const rE = await authFetch(`${API}/api/catalogos/empresas`);
       if (rE.ok) setEmpresas(await rE.json() as Empresa[]);
       setLoaded(true);
     })();
-  }, []);
+  }, [authFetch]);
 
   useEffect(() => {
     if (!empresaId) { setSedes([]); setSedeId(''); return; }
     (async () => {
       setSedesLoading(true);
       try {
-        const t = await getToken();
-        const rS = await fetch(`${API}/api/catalogos/sedes?empresa_id=${empresaId}`, {
-          headers: { Authorization: `Bearer ${t}` },
-        });
+        const rS = await authFetch(`${API}/api/catalogos/sedes?empresa_id=${empresaId}`);
         if (rS.ok) setSedes(await rS.json() as Sede[]);
       } finally {
         setSedesLoading(false);
       }
     })();
-  }, [empresaId, getToken]);
+  }, [empresaId, authFetch]);
 
   const empresaNombre = useMemo(
     () => empresas.find(e => e.id === parseInt(empresaId))?.nombre || '',
@@ -81,10 +77,9 @@ export default function useTecnicoView() {
     }
 
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes`, {
+      const res = await authFetch(`${API}/api/reportes`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           empresa_id: parseInt(empresaId),
           sede_id: parseInt(sedeId),
@@ -111,13 +106,12 @@ export default function useTecnicoView() {
     } finally {
       setLoading(false);
     }
-  }, [getToken, empresaId, sedeId, nombreAsesor, telefonoAsesor, hallazgos, usoMateriales, materialesDetalle, cambioAntena, serialAntena, motivoVisita, motivoVisitaOtro, firmaSvg, aceptoPrivacidad]);
+  }, [authFetch, empresaId, sedeId, nombreAsesor, telefonoAsesor, hallazgos, usoMateriales, materialesDetalle, cambioAntena, serialAntena, motivoVisita, motivoVisitaOtro, firmaSvg, aceptoPrivacidad]);
 
   const descargarPDF = useCallback(async (reporteId: number) => {
     setDescargando(true);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes/${reporteId}/pdf`, { headers: { Authorization: `Bearer ${t}` } });
+      const res = await authFetch(`${API}/api/reportes/${reporteId}/pdf`);
       if (!res.ok) throw new Error();
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -130,25 +124,22 @@ export default function useTecnicoView() {
     } finally {
       setDescargando(false);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   const obtenerQrEncuesta = useCallback(async (reporteId: number) => {
     setQrLoading(true);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/reportes/${reporteId}/qr-encuesta`, {
-        headers: { Authorization: `Bearer ${t}` },
-      });
+      const res = await authFetch(`${API}/api/reportes/${reporteId}/qr-encuesta`);
       if (!res.ok) throw new Error('Error al obtener enlace de encuesta');
       const data = await res.json();
       setQrUrl(data.url);
       setQrModalOpen(true);
     } catch (err) {
-      toast.error((err as Error).message);
+      if (err instanceof Error && err.message !== ' ' ) toast.error((err as Error).message);
     } finally {
       setQrLoading(false);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   const resetForm = useCallback(() => {
     setEmpresaId(''); setSedeId(''); setNombreAsesor(''); setTelefonoAsesor('');

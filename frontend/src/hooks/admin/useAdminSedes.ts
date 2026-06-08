@@ -9,7 +9,7 @@ const API = import.meta.env.VITE_API_URL ?? '';
 const PAGE_SIZE = 20;
 
 export default function useAdminSedes() {
-  const { getToken } = useAuth();
+  const { authFetch } = useAuth();
   const [items, setItems] = useState<Sede[]>([]);
   const [total, setTotal] = useState(0);
   const [empresas, setEmpresas] = useState<Empresa[]>([]);
@@ -28,7 +28,6 @@ export default function useAdminSedes() {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const t = await getToken();
       const params = new URLSearchParams({
         limit: String(PAGE_SIZE),
         offset: String(pagina * PAGE_SIZE),
@@ -36,13 +35,13 @@ export default function useAdminSedes() {
       if (debouncedSearch) params.set('search', debouncedSearch);
       if (filterEmpresaId !== null) params.set('empresa_id', String(filterEmpresaId));
 
-      const rSedes = await fetch(`${API}/api/admin/sedes?${params}`, { headers: { Authorization: `Bearer ${t}` } });
+      const rSedes = await authFetch(`${API}/api/admin/sedes?${params}`);
       if (rSedes.ok) {
         const data = await rSedes.json() as PaginatedResponse<Sede>;
         setItems(data.items);
         setTotal(data.total);
       }
-      const rEmp = await fetch(`${API}/api/admin/empresas`, { headers: { Authorization: `Bearer ${t}` } });
+      const rEmp = await authFetch(`${API}/api/admin/empresas`);
       if (rEmp.ok) {
         const empData = await rEmp.json() as Empresa[];
         setAllEmpresas(empData);
@@ -51,7 +50,7 @@ export default function useAdminSedes() {
     } finally {
       setCargando(false);
     }
-  }, [getToken, pagina, debouncedSearch, filterEmpresaId]);
+  }, [authFetch, pagina, debouncedSearch, filterEmpresaId]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -65,12 +64,12 @@ export default function useAdminSedes() {
     e.preventDefault();
     setSaving(true);
     try {
-      const t = await getToken();
       const body = { ...form, empresa_id: parseInt(form.empresa_id) };
       const url = editId ? `${API}/api/admin/sedes/${editId}` : `${API}/api/admin/sedes`;
       const method = editId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
-        method, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+      const res = await authFetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
       if (res.ok) { toast.success(editId ? 'Sede actualizada.' : 'Sede creada.'); resetForm(); cargar(); }
@@ -78,7 +77,7 @@ export default function useAdminSedes() {
     } finally {
       setSaving(false);
     }
-  }, [getToken, form, editId, resetForm, cargar]);
+  }, [authFetch, form, editId, resetForm, cargar]);
 
   const editar = useCallback((item: Sede) => {
     setEditId(item.id);
@@ -99,14 +98,13 @@ export default function useAdminSedes() {
     });
     if (!result.isConfirmed) return;
     try {
-      const t = await getToken();
-      await fetch(`${API}/api/admin/sedes/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+      await authFetch(`${API}/api/admin/sedes/${id}`, { method: 'DELETE' });
       toast.success(`"${nombre}" eliminada.`);
       cargar();
     } catch {
       toast.error('Error al eliminar la sede.');
     }
-  }, [getToken, cargar]);
+  }, [authFetch, cargar]);
 
   const empresaNombre = useCallback((id: number) => {
     const e = empresas.find(x => x.id === id);

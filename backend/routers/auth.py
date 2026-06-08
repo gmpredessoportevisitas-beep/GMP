@@ -1,43 +1,44 @@
-import json
-from urllib.request import Request, urlopen
-from urllib.error import URLError
+from fastapi import APIRouter, Depends, HTTPException, Response
 
-from fastapi import APIRouter, Depends, HTTPException
-
-from config import SUPABASE_URL, SUPABASE_ANON_KEY, supabase
+from config import FRONTEND_URL, supabase, auth_client
 from schemas import LoginRequest
 from deps import get_usuario_actual
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+COOKIE_MAX_AGE = 60 * 60 * 24  # 24 horas
+COOKIE_NAME = "gmp_token"
+
+
+def _set_cookie(response: Response, token: str) -> None:
+    response.set_cookie(
+        key=COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=FRONTEND_URL.startswith("https"),
+        samesite="lax",
+        max_age=COOKIE_MAX_AGE,
+        path="/",
+    )
+
 
 @router.post("/login")
-def login(data: LoginRequest):
-    if not SUPABASE_ANON_KEY:
-        raise HTTPException(500, "SUPABASE_ANON_KEY no configurada en el servidor.")
+def login(data: LoginRequest, response: Response):
     try:
         email = f"{data.username.strip()}@gmp.com"
-        body = json.dumps({"email": email, "password": data.password}).encode()
-        req = Request(
-            f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
-            data=body,
-            headers={
-                "apikey": SUPABASE_ANON_KEY,
-                "Content-Type": "application/json",
-            },
-        )
-        resp = urlopen(req)
-        auth_data = json.loads(resp.read().decode())
-        token = auth_data["access_token"]
-        user_id = auth_data["user"]["id"]
-    except HTTPException:
-        raise
-    except URLError:
-        raise HTTPException(401, "Usuario o contrasena incorrectos.")
+        auth_resp = auth_client.sign_in_with_password({
+            "email": email,
+            "password": data.password,
+        })
+        token = auth_resp.session.access_token
+        user_id = str(auth_resp.user.id)
     except Exception as e:
+        msg = str(e).lower()
+        if "invalid" in msg or "400" in msg:
+            raise HTTPException(401, "Usuario o contrasena incorrectos.")
         raise HTTPException(500, f"Error al autenticar: {str(e)}")
 
-    result = supabase.table("perfiles").select("*").eq("id", user_id).execute()
+    result = supabase.table("perfiles").select("id, nombre_completo, username, email, rol, activo, creado_en").eq("id", user_id).execute()
     if not result.data:
         raise HTTPException(403, "Perfil no encontrado. Contacta al administrador.")
 
@@ -45,7 +46,14 @@ def login(data: LoginRequest):
     if not perfil.get("activo", False):
         raise HTTPException(403, "Cuenta desactivada.")
 
-    return {"access_token": token, "perfil": perfil}
+    _set_cookie(response, token)
+    return {"perfil": perfil}
+
+
+@router.post("/logout")
+def logout(response: Response):
+    response.delete_cookie(key=COOKIE_NAME, path="/")
+    return {"ok": True}
 
 
 @router.get("/me")

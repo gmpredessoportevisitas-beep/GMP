@@ -1,6 +1,8 @@
 """
 GMP v2 Backend - API de Reportes con Control de Roles
 FastAPI + Supabase + JWT Auth + fpdf2
+
+Alejandro Álvarez Patiño - 2026
 """
 import os
 import sys
@@ -21,6 +23,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_URL],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )

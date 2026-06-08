@@ -14,7 +14,7 @@ interface PreguntaForm {
 }
 
 export default function useAdminEncuestaPreguntas() {
-  const { getToken } = useAuth();
+  const { authFetch } = useAuth();
   const [items, setItems] = useState<EncuestaPregunta[]>([]);
   const [form, setForm] = useState<PreguntaForm>({ texto: '', activa: true, orden: 0 });
   const [editId, setEditId] = useState<number | null>(null);
@@ -26,13 +26,12 @@ export default function useAdminEncuestaPreguntas() {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/admin/encuesta-preguntas`, { headers: { Authorization: `Bearer ${t}` } });
+      const res = await authFetch(`${API}/api/admin/encuesta-preguntas`);
       if (res.ok) setItems(await res.json() as EncuestaPregunta[]);
     } finally {
       setCargando(false);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -46,12 +45,11 @@ export default function useAdminEncuestaPreguntas() {
     e.preventDefault();
     setSaving(true);
     try {
-      const t = await getToken();
       const url = editId ? `${API}/api/admin/encuesta-preguntas/${editId}` : `${API}/api/admin/encuesta-preguntas`;
       const method = editId ? 'PUT' : 'POST';
-      const res = await fetch(url, {
+      const res = await authFetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       if (res.ok) {
@@ -65,7 +63,7 @@ export default function useAdminEncuestaPreguntas() {
     } finally {
       setSaving(false);
     }
-  }, [getToken, editId, form, resetForm, cargar]);
+  }, [authFetch, editId, form, resetForm, cargar]);
 
   const editar = useCallback((item: EncuestaPregunta) => {
     setEditId(item.id);
@@ -86,14 +84,13 @@ export default function useAdminEncuestaPreguntas() {
     });
     if (!result.isConfirmed) return;
     try {
-      const t = await getToken();
-      await fetch(`${API}/api/admin/encuesta-preguntas/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${t}` } });
+      await authFetch(`${API}/api/admin/encuesta-preguntas/${id}`, { method: 'DELETE' });
       toast.success('Pregunta eliminada.');
       cargar();
     } catch {
       toast.error('Error al eliminar la pregunta.');
     }
-  }, [getToken, cargar]);
+  }, [authFetch, cargar]);
 
   const debouncedSearch = useDebounce(searchTerm, 300);
   const filteredItems = useMemo(() => {

@@ -8,7 +8,7 @@ import { Perfil, UsuarioForm } from '../../types';
 const API = import.meta.env.VITE_API_URL ?? '';
 
 export default function useAdminUsuarios() {
-  const { getToken } = useAuth();
+  const { authFetch } = useAuth();
   const [items, setItems] = useState<Perfil[]>([]);
   const [form, setForm] = useState<UsuarioForm>({ username: '', password: '', nombre_completo: '', rol: 'tecnico' });
   const [saving, setSaving] = useState(false);
@@ -23,13 +23,12 @@ export default function useAdminUsuarios() {
   const cargar = useCallback(async () => {
     setCargando(true);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/admin/usuarios`, { headers: { Authorization: `Bearer ${t}` } });
+      const res = await authFetch(`${API}/api/admin/usuarios`);
       if (res.ok) setItems(await res.json() as Perfil[]);
     } finally {
       setCargando(false);
     }
-  }, [getToken]);
+  }, [authFetch]);
 
   useEffect(() => { cargar(); }, [cargar]);
 
@@ -42,10 +41,9 @@ export default function useAdminUsuarios() {
     e.preventDefault();
     setSaving(true);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/admin/usuarios`, {
+      const res = await authFetch(`${API}/api/admin/usuarios`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
       });
       if (res.ok) {
@@ -59,7 +57,7 @@ export default function useAdminUsuarios() {
     } finally {
       setSaving(false);
     }
-  }, [getToken, form, resetForm, cargar]);
+  }, [authFetch, form, resetForm, cargar]);
 
   const toggleActivo = useCallback(async (userId: string, nombre: string, activo: boolean) => {
     const accion = activo ? 'Desactivar' : 'Activar';
@@ -75,16 +73,14 @@ export default function useAdminUsuarios() {
     });
     if (!result.isConfirmed) return;
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/admin/usuarios/${userId}/toggle`, {
+      const res = await authFetch(`${API}/api/admin/usuarios/${userId}/toggle`, {
         method: 'PUT',
-        headers: { Authorization: `Bearer ${t}` },
       });
       if (res.ok) cargar();
     } catch {
       // ignore
     }
-  }, [getToken, cargar]);
+  }, [authFetch, cargar]);
 
   const cambiarPassword = useCallback(async (userId: string) => {
     if (!newPassword || newPassword.length < 6) {
@@ -93,10 +89,9 @@ export default function useAdminUsuarios() {
     }
     setSaving(true);
     try {
-      const t = await getToken();
-      const res = await fetch(`${API}/api/admin/usuarios/${userId}/password`, {
+      const res = await authFetch(`${API}/api/admin/usuarios/${userId}/password`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: newPassword }),
       });
       if (res.ok) {
@@ -110,7 +105,7 @@ export default function useAdminUsuarios() {
     } finally {
       setSaving(false);
     }
-  }, [getToken, newPassword]);
+  }, [authFetch, newPassword]);
 
   const debouncedSearch = useDebounce(searchTerm, 300);
   const filteredItems = useMemo(() => {
