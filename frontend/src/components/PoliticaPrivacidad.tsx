@@ -66,7 +66,7 @@ export default function PoliticaPrivacidad({setPrivacyOpen}: PoliticaPrivacidadP
 
                 <section>
                   <h3 className="text-base font-bold text-primary-700 mb-2">4. Procedimiento para Consultas y Reclamos</h3>
-                  <p>El titular podra ejercer sus derechos enviando una comunicacion escrita al correo electronico <strong>[CORREO_CONTACTO]</strong>, indicando su nombre completo, documento de identidad y la descripcion clara de su solicitud.</p>
+                  <p>El titular podra ejercer sus derechos enviando una comunicacion escrita al correo electronico <strong>gmpredes@gmail.com</strong>, indicando su nombre completo, documento de identidad y la descripcion clara de su solicitud.</p>
                   <p className="mt-1">Los plazos de respuesta seran:</p>
                   <ul className="list-disc pl-5 mt-1 space-y-1">
                     <li><strong>Consultas:</strong> maximo diez (10) dias habiles contados a partir de la fecha de recibido.</li>
