@@ -487,10 +487,6 @@ export default function TecnicoView() {
                 <QRCodeSVG value={qrUrl} size={200} />
               </div>
             </div>
-            <button type="button" onClick={() => { navigator.clipboard.writeText(qrUrl); toast.success('Enlace copiado al portapapeles'); }}
-              className="text-sm text-primary-600 hover:text-primary-700 font-medium mb-4 block mx-auto underline underline-offset-2">
-              Copiar enlace
-            </button>
             <button type="button" onClick={() => setQrModalOpen(false)}
               className="w-full py-2.5 px-4 bg-gray-100 text-gray-600 rounded-xl font-semibold hover:bg-gray-200 transition-all active:scale-[0.98]">
               Cerrar
